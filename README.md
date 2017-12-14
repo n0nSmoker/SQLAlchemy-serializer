@@ -22,7 +22,7 @@ class FlatModel(db.Model, SerializerMixin):
     boolean = db.Column(db.Boolean, default=True)
     boolean2 = db.Column(db.Boolean, default=False)
     null = db.Column(db.String)
-    non_sqlalchemy_field = dict(qwerty=123)
+    non_sqlalchemy_dict = dict(qwerty=123)
 
 
 class ComplexModel(db.Model, SerializerMixin):
@@ -30,14 +30,14 @@ class ComplexModel(db.Model, SerializerMixin):
     # schema is not defined so
     # we will get all SQLALCHEMY attributes of the instance by default
 
-    __tablename__ = 'test_nested_model'
+    __tablename__ = 'test_complex_model'
     id = db.Column(db.Integer, primary_key=True)
     string = db.Column(db.String(256), default='Some string with КИРИЛИК СИМБОЛЗ!')
     boolean = db.Column(db.Boolean, default=True)
     null = db.Column(db.String)
     flat_id = db.Column(db.ForeignKey('test_flat_model.id', ondelete='CASCADE'))
     rel = db.relationship('FlatModel', lazy='joined', uselist=False)
-
+    non_sqlalchemy_list = [dict(a=12, b=10), dict(a=123, b=12)]
 
 instance = ComplexModel.query.first()
 
@@ -60,19 +60,20 @@ dict(
         boolean=True,
         boolean2=False,
         null=None,
-        non_sqlalchemy_field=dict(qwerty=123)
+        non_sqlalchemy_dict=dict(qwerty=123)
 )
 
 
 # Extend schema
 
-instance.to_dict(extend=('-id', 'rel.id'))
+instance.to_dict(extend=('-id', 'rel.id', 'non_sqlalchemy_list'))
 
 dict(
     string='Some string with КИРИЛИК СИМБОЛЗ!',
     boolean=True,
     null=None,
     flat_id=1,
+    non_sqlalchemy_list=[dict(a=12, b=10), dict(a=123, b=12)],
     rel=dict(
         id=1,
         string='Some string with КИРИЛИК СИМБОЛЗ!',
@@ -81,17 +82,18 @@ dict(
         boolean=True,
         boolean2=False,
         null=None,
-        non_sqlalchemy_field=dict(qwerty=123)
+        non_sqlalchemy_dict=dict(qwerty=123)
 )
 
 
 # Replace schema
 
-instance.to_dict(schema=('id', 'flat_id', 'rel.id'))
+instance.to_dict(schema=('id', 'flat_id', 'rel.id', 'non_sqlalchemy_list.a'))
 
 dict(
     id=1,
     flat_id=1,
+    non_sqlalchemy_list=[dict(a=12), dict(a=123)],
     rel=dict(
         id=1
 )
