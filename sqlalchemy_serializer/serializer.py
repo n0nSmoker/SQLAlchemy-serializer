@@ -25,15 +25,16 @@ class Serializer(object):
         :to_user_tz: bool
         """
         self.kwargs = kwargs
+        self.schema = None
         self._keys = {}
 
     def __call__(self, value, schema=(), extend=()):
         if schema:
             # Use user defined schema only
             self.is_greedy = False
-        schema = self.merge_schemas(schema, extend)
+        self.schema = self.merge_schemas(schema, extend)
 
-        logger.info('Called SCHEMA:%s EXTEND:%s VALUE:%s' % (schema, extend, value))
+        logger.info('Called schema:%s extend:%s value:%s' % (self.schema, extend, value))
         if self.is_valid_callable(value):
             value = value()
 
@@ -50,13 +51,13 @@ class Serializer(object):
             return self.serialize_iter(value)
 
         elif isinstance(value, SerializerMixin):
-            self._set_schema(
-                self.merge_schemas(value.__schema__, schema)
+            self._set_keys(
+                self.merge_schemas(value.__schema__, self.schema)
             )
             return self.serialize_model(value)
 
         elif isinstance(value, dict):
-            self._set_schema(schema)
+            self._set_keys(self.schema)
             return self.serialize_dict(value)
 
         else:
@@ -81,18 +82,19 @@ class Serializer(object):
             return not any([i.args, i.varargs, i.varkw])
         return False
 
-    def _fork(self, key, value):
+    def _fork(self, value, key=None):
         """
         Process data in a separate serializer
-        :param key:
         :param value:
+        :param key:
         :return: serialized value
         """
         if isinstance(value, self.simple_types):
             return value
         serializer = Serializer(**self.kwargs)
         prop_name = 'extend' if self.is_greedy else 'schema'
-        return serializer(value, **{prop_name: self._get_sub_schema(key=key)})
+        schema = self._get_sub_schema(key=key) if key else self.schema
+        return serializer(value, **{prop_name: schema})
 
     def _negate(self, key):
         return '%s%s' % (self._NEGATION, key)
@@ -127,7 +129,7 @@ class Serializer(object):
         """
         return self._DELIM.join(key)
 
-    def _set_schema(self, keys):
+    def _set_keys(self, keys):
         for k in keys:
             head, *tail = self._to_list(k)
             if head in self._keys:
@@ -135,7 +137,7 @@ class Serializer(object):
                     self._keys[head].append(tail)
             else:
                 self._keys[head] = [tail] if tail else []
-        logger.info('Set KEYS:%s' % self._keys)
+        logger.info('Set keys:%s' % self._keys)
 
     def _get_sub_schema(self, key):
         keys = []
@@ -143,7 +145,7 @@ class Serializer(object):
             if k:
                 keys.append(k)
         for k in self._keys.get(self._negate(key), []):
-            assert k, 'KEY:%s has empty subkeys' % self._negate(key)
+            assert k, 'key:%s has empty subkeys' % self._negate(key)
             # move negation mark to the next element
             k[0] = self._negate(k[0])
             keys.append(k)
@@ -157,19 +159,23 @@ class Serializer(object):
         :param args: tuple of lists of keys
         :return: list
         """
-        logger.info('Merge schemas {}'.format(args))
+        logger.info('Merge schemas:%s' % str(args))
         lists = list(args)
         lists.reverse()
         res = set()
         while lists:
             keys = lists.pop()
+            logger.info('Check schema:%s' % str(keys))
             for k in keys:
                 if self._is_negation(k):
                     if self._admit(k) in res:
+                        logger.info('Remove key:%s' % self._admit(k))
                         res.remove(self._admit(k))
                 else:
                     if self._negate(k) in res:
+                        logger.info('Remove key:%s' % self._negate(k))
                         res.remove(self._negate(k))
+                logger.info('Add key:%s' % k)
                 res.add(k)
         return res
 
@@ -188,7 +194,7 @@ class Serializer(object):
         res = []
         for v in value:
             try:
-                res.append(self(v))
+                res.append(self._fork(value=v))
             except IsNotSerializable:
                 continue
         return res
@@ -197,9 +203,10 @@ class Serializer(object):
         res = {}
         for k, v in value.items():
             if self._is_valid(k):
+                logger.info('Serialize key:%s' % k)
                 res[k] = self._fork(key=k, value=v)
             else:
-                logger.info('Skipped KEY:%s' % k)
+                logger.info('Skipped key:%s' % k)
         return res
 
     def serialize_model(self, value):

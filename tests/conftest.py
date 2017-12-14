@@ -95,6 +95,17 @@ def flat_model(session):
 
 
 @pytest.fixture(scope='function')
+def flat_models_list(session):
+    result = []
+    for i in range(5):
+        m = FlatModel(string=i)
+        session.add(m)
+        result.append(m)
+    session.commit()
+    return result
+
+
+@pytest.fixture(scope='function')
 def simple_nested_model(flat_model, session):
     m = NestedModel()
     m.rel = flat_model
