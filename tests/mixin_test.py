@@ -51,8 +51,8 @@ def test_flat_model(flat_model, session):
     assert 'null' in data
     assert data['null'] == m.null
 
-    # Override schema
-    data = m.to_dict(schema=('time_at', '-boolean2', '-boolean'))
+    # Extend schema
+    data = m.to_dict(extend=('time_at', '-boolean2', '-boolean'))
     assert 'id' in data
     assert data['id'] == m.id
 
@@ -68,8 +68,8 @@ def test_flat_model(flat_model, session):
     assert 'null' in data
     assert data['null'] == m.null
 
-    # Not Greedy
-    data = m.to_dict(is_greedy=False, schema=('date_at', 'id'))
+    # Replace schema
+    data = m.to_dict(schema=('date_at', 'id'))
     assert 'id' in data
     assert 'date_at' in data and data['date_at']
 
@@ -86,7 +86,7 @@ def test_nested_model_greedy(flat_model, nested_model, session):
     session.add(m)
     session.commit()
 
-    # Greedy no negation
+    # No negation
     data = m.to_dict()
     assert 'id' in data
     assert data['id'] == m.id
@@ -109,8 +109,8 @@ def test_nested_model_greedy(flat_model, nested_model, session):
     assert 'boolean2' in data['rel'] and data['rel']['boolean2'] is False
     assert 'null' in data['rel'] and data['rel']['null'] is None
 
-    # Greedy with negation
-    data = m.to_dict(schema=('-id', '-string', '-rel.id'))
+    # With negation
+    data = m.to_dict(extend=('-id', '-string', '-rel.id'))
     assert 'id' not in data
     assert 'string' not in data
     assert 'flat_id' in data and data['flat_id']
@@ -127,6 +127,44 @@ def test_nested_model_greedy(flat_model, nested_model, session):
     assert 'boolean' in data['rel'] and data['rel']['boolean']
     assert 'boolean2' in data['rel'] and data['rel']['boolean2'] is False
     assert 'null' in data['rel'] and data['rel']['null'] is None
+
+
+def test_nested2_model_greedy(flat_model, nested_model, session):
+    m = nested_model()
+    m.rel = flat_model()  # a relation
+    session.add(m)
+    nested = flat_model()
+    session.add(nested)
+    session.commit()
+    m.rel.nested_rel = nested  # not a relation
+
+    # No negation
+    data = m.to_dict(extend=('rel.nested_rel',))
+    assert 'rel' in data
+    assert 'id' in data['rel'] and data['rel']['id'] == m.rel.id
+    assert 'string' in data['rel'] and data['rel']['string'] == m.rel.string
+    assert 'nested_rel' in data['rel']
+    assert 'id' in data['rel']['nested_rel']
+    assert data['rel']['nested_rel']['id'] == m.rel.nested_rel.id
+    assert 'string' in data['rel']['nested_rel']
+    assert data['rel']['nested_rel']['string'] == m.rel.nested_rel.string
+
+    # Negation
+    m.rel.__schema__ = ('nested_rel',)  # because its not defined in model
+    data = m.to_dict(extend=(
+        '-rel.nested_rel.string',
+        '-rel.nested_rel.date_at',
+        '-rel.id',
+    ))
+    assert 'rel' in data
+    assert 'nested_rel' in data['rel']
+    assert 'id' in data['rel']['nested_rel']
+    assert data['rel']['nested_rel']['id'] == m.rel.nested_rel.id
+    assert 'string' not in data['rel']['nested_rel']
+    assert 'date_at' not in data['rel']['date_at']
+    assert 'id' not in data['rel']
+
+
 
 
 

@@ -1,7 +1,9 @@
 from datetime import datetime, date
 import logging
+import inspect
 
 from collections import Iterable
+from sqlalchemy import inspect as sql_inspect
 from lib.timezones import to_local_time, format_date, format_datetime
 
 
@@ -10,10 +12,11 @@ logger.setLevel(logging.INFO)
 
 
 class Serializer(object):
-    simple_types = (int, str, float, bytes, bool, type(None))
     _WILDCARD = '*'
     _DELIM = '.'
     _NEGATION = '-'
+    simple_types = (int, str, float, bytes, bool, type(None))
+    is_greedy = True
 
     def __init__(self, **kwargs):
         """
@@ -25,9 +28,14 @@ class Serializer(object):
         self.kwargs = kwargs
         self._keys = {}
 
-    def __call__(self, value, schema=()):
-        logger.info('Called with KEYS:%s VALUE:%s' % (schema, value))
-        if callable(value):
+    def __call__(self, value, schema=(), extend=()):
+        if schema:
+            # Use user defined schema only
+            self.is_greedy = False
+        schema = self.merge_schemas(schema, extend)
+
+        logger.info('Called SCHEMA:%s EXTEND:%s VALUE:%s' % (schema, extend, value))
+        if self.is_valid_callable(value):
             value = value()
 
         if isinstance(value, self.simple_types):
@@ -56,10 +64,6 @@ class Serializer(object):
             raise IsNotSerializable('Malformed value')
 
     @property
-    def is_greedy(self):
-        return bool(self.kwargs.get('is_greedy', True))
-
-    @property
     def to_user_tz(self):
         return bool(self.kwargs.get('to_user_tz', False))
 
@@ -71,6 +75,13 @@ class Serializer(object):
     def date_format(self):
         return self.kwargs.get('date_format') or '%Y-%m-%d'
 
+    @staticmethod
+    def is_valid_callable(func):
+        if callable(func):
+            i = inspect.getfullargspec(func)
+            return not any([i.args, i.varargs, i.varkw])
+        return False
+
     def _fork(self, key, value):
         """
         Process data in a separate serializer
@@ -81,7 +92,8 @@ class Serializer(object):
         if isinstance(value, self.simple_types):
             return value
         serializer = Serializer(**self.kwargs)
-        return serializer(value, schema=self._get_sub_schema(key=key))
+        prop_name = 'extend' if self.is_greedy else 'schema'
+        return serializer(value, **{prop_name: self._get_sub_schema(key=key)})
 
     def _negate(self, key):
         return '%s%s' % (self._NEGATION, key)
@@ -100,11 +112,25 @@ class Serializer(object):
                 return False
         if self._WILDCARD in self._keys:
             return True
-        return key in self._keys or self.is_greedy and not key.startswith('_')
+        return key in self._keys or self.is_greedy
+
+    def _to_list(self, key):
+        """
+        :param key:  "-prop1.prop2.*"
+        :return: list: ['-prop1', 'prop2', '*']
+        """
+        return key.split(self._DELIM)
+
+    def _to_string(self, key):
+        """
+        :param key: ['-prop1', 'prop2', '*']
+        :return: str: "-prop1.prop2.*"
+        """
+        return self._DELIM.join(key)
 
     def _set_schema(self, keys):
         for k in keys:
-            head, *tail = k.split(self._DELIM)  # -prop1.prop2.* --> ['-prop1', 'prop2', '*']
+            head, *tail = self._to_list(k)
             if head in self._keys:
                 if tail:
                     self._keys[head].append(tail)
@@ -118,11 +144,13 @@ class Serializer(object):
             if k:
                 keys.append(k)
         for k in self._keys.get(self._negate(key), []):
-            if not k:
-                raise Exception('Excluded KEY:%s has no access to subkeys' % k)
-            k[0] = self._negate(k[0])  # move negation mark to next elm
+            assert k, 'KEY:%s has empty subkeys' % self._negate(key)
+            # move negation mark to the next element
+            k[0] = self._negate(k[0])
             keys.append(k)
-        return [self._DELIM.join(k) for k in keys]  # ['-prop1', 'prop2', '*'] --> -prop1.prop2.*
+
+        # Keys are lists but we need string keys in schema
+        return [self._to_string(k) for k in keys]
 
     def merge_schemas(self, *args):
         """
@@ -177,7 +205,9 @@ class Serializer(object):
 
     def serialize_model(self, value):
         res = {}
-        for k in value.get_model_keys():
+        # Check model keys and not negative keys from schema as well
+        keys = {k for k in self._keys.keys() if not self._is_negation(k)}
+        for k in value.serializable_keys.union(keys):
             if self._is_valid(k):
                 v = getattr(value, k)
                 res[k] = self._fork(key=k, value=v)
@@ -194,15 +224,19 @@ class SerializerMixin(object):
     """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format"""
     __schema__ = ()
 
-    def get_model_keys(self):
-        return self._sa_instance_state.attrs.keys()
+    @property
+    def serializable_keys(self):
+        """
+        :return: set of keys
+        """
+        return {a.key for a in sql_inspect(self).mapper.attrs}
 
-    def to_dict(self, schema=(), is_greedy=True, date_format=None, datetime_format=None, to_user_tz=False):
+    def to_dict(self, schema=(), extend=(), date_format=None, datetime_format=None, to_user_tz=False):
         r"""
         Returns SQLAlchemy model's data in JSON compatible format\n
 
-        :param schema: iterable with names of properties to grab or ignore (see exact syntax in example)
-        :param is_greedy: bool grab or not properties which are not in keys var
+        :param schema: iterable schema to replace existing one
+        :param extend: iterable schema to extend existing one
         :param date_format: str in Babel format
         :param datetime_format: str in Babel format
         :param to_user_tz: whether or not convert datetimes to local user timezone (Babel)
@@ -248,10 +282,9 @@ class SerializerMixin(object):
 
         """
         s = Serializer(
-            is_greedy=is_greedy,
             date_format=date_format,
             datetime_format=datetime_format,
             to_user_tz=to_user_tz
         )
-        return s(self, schema=schema)
+        return s(self, schema=schema, extend=extend)
 
