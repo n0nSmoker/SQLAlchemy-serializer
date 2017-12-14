@@ -5,7 +5,7 @@ from flask import url_for
 from werkzeug.utils import import_string
 
 from flask_builder import create_app, create_db, drop_db, create_tables, get_config_name, db
-from to_dict import SerializerMixin
+from sqlalchemy_serializer import SerializerMixin
 
 APP_NAME = 'serializer_tests'
 
@@ -66,7 +66,7 @@ def app(request):
     return app
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='module')
 def session(app, request):
     """Creates a new database session for a test."""
     connection = app.db.engine.connect()
@@ -86,14 +86,34 @@ def session(app, request):
     return session
 
 
-@pytest.fixture(scope='module')
-def flat_model():
-    return FlatModel
+@pytest.fixture(scope='function')
+def flat_model(session):
+    m = FlatModel()
+    session.add(m)
+    session.commit()
+    return m
 
 
-@pytest.fixture(scope='module')
-def nested_model():
-    return NestedModel
+@pytest.fixture(scope='function')
+def simple_nested_model(flat_model, session):
+    m = NestedModel()
+    m.rel = flat_model
+    session.add(m)
+    session.commit()
+    return m
+
+
+@pytest.fixture(scope='function')
+def nested_model(session):
+    m = NestedModel()
+    m.rel = FlatModel()  # a relation
+    session.add(m)
+
+    nested = FlatModel()
+    session.add(nested)
+    session.commit()
+    m.rel.nested_rel = nested  # not a relation
+    return m
 
 
 

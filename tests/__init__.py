@@ -7,6 +7,6 @@ logging.basicConfig(
 )
 
 
-logger = logging.getLogger('to_dict:test')
+logger = logging.getLogger('serializer:test')
 logger.setLevel(logging.INFO)
 

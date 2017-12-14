@@ -20,7 +20,6 @@ class Serializer(object):
 
     def __init__(self, **kwargs):
         """
-        :is_greedy: bool
         :date_format: str Babel-format
         :datetime_format: str Babel-format
         :to_user_tz: bool
@@ -222,7 +221,7 @@ class IsNotSerializable(Exception):
 
 class SerializerMixin(object):
     """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format"""
-    __schema__ = ()
+    __schema__ = ()  # default schema, define it in your model
 
     @property
     def serializable_keys(self):
@@ -242,44 +241,6 @@ class SerializerMixin(object):
         :param to_user_tz: whether or not convert datetimes to local user timezone (Babel)
 
         :return: data: dict
-
-        Example:
-            class Model1(db.Model):
-                prop1 = ...
-                prop2 = ...
-
-            class Model2(db.Model):
-                prop1 = ...
-                prop2 = ...
-                prop3 = db.relationship('Model3')
-
-            class Model3(db.Model):
-                prop1 = ...
-                prop2 = ...
-
-            class SQLAlchemyModel(db.Model, Serializer)
-                __private__ = {'rel3'}
-                prop1 = db.relationship('Model1', uselist=False)
-                prop2 = db.relationship('Model2')
-                prop3 = db.Column(ARRAY(db.String)))
-                prop4 = db.Column(db.String))
-
-            model = SQLAlchemyModel.query.one()
-
-            model.to_dict(
-                keys=('prop4', 'prop2.prop3.prop1', 'prop1.prop1', '-prop3',)
-            )
-
-            {
-                'prop1': {'prop2':...,},
-                'prop2': [{
-                    'prop1':...,
-                    'prop2':...,
-                    'prop3':[{'prop2':...}]
-                }],
-                'prop3': [....]
-            }
-
         """
         s = Serializer(
             date_format=date_format,
