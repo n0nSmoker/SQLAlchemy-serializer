@@ -25,7 +25,7 @@ class FlatModel(db.Model, SerializerMixin):
     non_sqlalchemy_field = dict(qwerty=123)
 
 
-class NestedModel(db.Model, SerializerMixin):
+class ComplexModel(db.Model, SerializerMixin):
 
     # schema is not defined so
     # we will get all SQLALCHEMY attributes of the instance by default
@@ -39,20 +39,21 @@ class NestedModel(db.Model, SerializerMixin):
     rel = db.relationship('FlatModel', lazy='joined', uselist=False)
 
 
-instance = NestedModel.query.first()
+instance = ComplexModel.query.first()
 
 
 # Lazy mode =)
 
 instance.to_dict()
 
-dict(  # id is skipped because in defined in __schema__ with '-' simbol
+dict(
+    id=1,
     string='Some string with КИРИЛИК СИМБОЛЗ!',
     boolean=True,
     null=None,
     flat_id=1,
     rel=dict(
-        id=1,
+        # id is skipped because in defined in __schema__ with '-' simbol
         string='Some string with КИРИЛИК СИМБОЛЗ!',
         time_at=datetime...,
         date_at=date...,
@@ -65,15 +66,15 @@ dict(  # id is skipped because in defined in __schema__ with '-' simbol
 
 # Extend schema
 
-instance.to_dict(extend=('id', '-rel.id'))
+instance.to_dict(extend=('-id', 'rel.id'))
 
 dict(
-    id=1,
     string='Some string with КИРИЛИК СИМБОЛЗ!',
     boolean=True,
     null=None,
     flat_id=1,
     rel=dict(
+        id=1,
         string='Some string with КИРИЛИК СИМБОЛЗ!',
         time_at=datetime...,
         date_at=date...,
