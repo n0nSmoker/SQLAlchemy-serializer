@@ -189,6 +189,16 @@ def test_nested2_model_with_schema(nested_model):
     assert data['rel']['nested_rel']['id'] == m.rel.nested_rel.id
     assert len(data['rel']['nested_rel'].keys()) == 1
 
+    # Fetch a few property only
+    data = m.to_dict(schema=('rel.nested_rel.id', 'rel.nested_rel.string'))
+    assert 'rel' in data and len(data.keys()) == 1
+    assert 'nested_rel' in data['rel'] and len(data['rel'].keys()) == 1
+    assert 'id' in data['rel']['nested_rel']
+    assert data['rel']['nested_rel']['id'] == m.rel.nested_rel.id
+    assert 'string' in data['rel']['nested_rel']
+    assert data['rel']['nested_rel']['string'] == m.rel.nested_rel.string
+    assert len(data['rel']['nested_rel'].keys()) == 2
+
 
 
 
