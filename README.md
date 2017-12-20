@@ -9,10 +9,14 @@ Mixin for sqlalchemy-models serialization without pain.
 
 class FlatModel(db.Model, SerializerMixin):
 
-    # Define default schema here if you need
-    # or NON sqlalchemy attributes otherwise they will not be included
+    # If you define schema here, serializer will become NOT greedy
+    # and will take only the attributes you defined
+    # Otherwise it will be greedy and will take all SQLAlchemy attributes
     # You can use dot notation to define nested attributes
-    __schema__ = ('non_sqlalchemy_field', '-id')
+    __schema_only__ = ('non_sqlalchemy_field', '-id')
+
+    # Schema may be extended here
+    __schema_extend__ = ()
 
     __tablename__ = 'test_flat_model'
     id = db.Column(db.Integer, primary_key=True)
@@ -86,9 +90,9 @@ dict(
 )
 
 
-# Replace schema
+# Exclusive schema
 
-instance.to_dict(schema=('id', 'flat_id', 'rel.id', 'non_sqlalchemy_list.a'))
+instance.to_dict(only=('id', 'flat_id', 'rel.id', 'non_sqlalchemy_list.a'))
 
 dict(
     id=1,
