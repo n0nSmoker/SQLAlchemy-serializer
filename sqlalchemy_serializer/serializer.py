@@ -12,11 +12,7 @@ logger.setLevel(logging.INFO)
 
 
 class Serializer(object):
-    _WILDCARD = '*'
-    _DELIM = '.'
-    _NEGATION = '-'
     simple_types = (int, str, float, bytes, bool, type(None))
-    is_greedy = True
 
     def __init__(self, **kwargs):
         """
@@ -26,15 +22,11 @@ class Serializer(object):
         """
         self.kwargs = kwargs
         self.schema = None
-        self._keys = {}
 
-    def __call__(self, value, schema=(), extend=()):
-        if schema:
-            # Use user defined schema only
-            self.is_greedy = False
-        self.schema = self.merge_schemas(schema, extend)
+    def __call__(self, value, only=(), extend=()):
+        self.schema = Schema(only=only, extend=extend)
 
-        logger.info('Called schema:%s extend:%s value:%s' % (self.schema, extend, value))
+        logger.info('Called %s value:%s' % (self.schema, value))
         if self.is_valid_callable(value):
             value = value()
 
@@ -51,13 +43,13 @@ class Serializer(object):
             return self.serialize_iter(value)
 
         elif isinstance(value, SerializerMixin):
-            self._set_keys(
-                self.merge_schemas(value.__schema__, self.schema)
+            self.schema.merge(
+                only=value.__schema_only__,
+                extend=value.__schema_extend__
             )
             return self.serialize_model(value)
 
         elif isinstance(value, dict):
-            self._set_keys(self.schema)
             return self.serialize_dict(value)
 
         else:
@@ -92,92 +84,9 @@ class Serializer(object):
         if isinstance(value, self.simple_types):
             return value
         serializer = Serializer(**self.kwargs)
-        prop_name = 'extend' if self.is_greedy else 'schema'
-        schema = self._get_sub_schema(key=key) if key else self.schema
-        return serializer(value, **{prop_name: schema})
-
-    def _negate(self, key):
-        return '%s%s' % (self._NEGATION, key)
-
-    def _is_negation(self, key):
-        return key.startswith(self._NEGATION)
-
-    def _admit(self, key):
-        if self._is_negation(key):
-            return key[len(self._NEGATION):]
-        return key
-
-    def _is_valid(self, key):
-        if self._negate(key) in self._keys:
-            if not self._keys[self._negate(key)]:  # If tail is empty
-                return False
-        if self._WILDCARD in self._keys:
-            return True
-        return key in self._keys or self.is_greedy
-
-    def _to_list(self, key):
-        """
-        :param key:  "-prop1.prop2.*"
-        :return: list: ['-prop1', 'prop2', '*']
-        """
-        return key.split(self._DELIM)
-
-    def _to_string(self, key):
-        """
-        :param key: ['-prop1', 'prop2', '*']
-        :return: str: "-prop1.prop2.*"
-        """
-        return self._DELIM.join(key)
-
-    def _set_keys(self, keys):
-        for k in keys:
-            head, *tail = self._to_list(k)
-            if head in self._keys:
-                if tail:
-                    self._keys[head].append(tail)
-            else:
-                self._keys[head] = [tail] if tail else []
-        logger.info('Set keys:%s' % self._keys)
-
-    def _get_sub_schema(self, key):
-        keys = []
-        for k in self._keys.get(key, []):
-            if k:
-                keys.append(k)
-        for k in self._keys.get(self._negate(key), []):
-            assert k, 'key:%s has empty subkeys' % self._negate(key)
-            # move negation mark to the next element
-            k[0] = self._negate(k[0])
-            keys.append(k)
-
-        # Keys are lists but we need string keys in schema
-        return [self._to_string(k) for k in keys]
-
-    def merge_schemas(self, *args):
-        """
-        Merges lists of string-keys, priority grows from left to right
-        :param args: tuple of lists of keys
-        :return: list
-        """
-        logger.info('Merge schemas:%s' % str(args))
-        lists = list(args)
-        lists.reverse()
-        res = set()
-        while lists:
-            keys = lists.pop()
-            logger.info('Check schema:%s' % str(keys))
-            for k in keys:
-                if self._is_negation(k):
-                    if self._admit(k) in res:
-                        logger.info('Remove key:%s' % self._admit(k))
-                        res.remove(self._admit(k))
-                else:
-                    if self._negate(k) in res:
-                        logger.info('Remove key:%s' % self._negate(k))
-                        res.remove(self._negate(k))
-                logger.info('Add key:%s' % k)
-                res.add(k)
-        return res
+        kwargs = self.schema.fork(key=key)
+        logger.info('Fork serializer kwargs:%s, value=%s' % (str(kwargs), value))
+        return serializer(value, **kwargs)
 
     def serialize_datetime(self, value):
         if self.to_user_tz:
@@ -202,7 +111,7 @@ class Serializer(object):
     def serialize_dict(self, value):
         res = {}
         for k, v in value.items():
-            if self._is_valid(k):
+            if self.schema.is_valid(k):
                 logger.info('Serialize key:%s' % k)
                 res[k] = self._fork(key=k, value=v)
             else:
@@ -211,11 +120,14 @@ class Serializer(object):
 
     def serialize_model(self, value):
         res = {}
-        # Check model keys and not negative keys from schema as well
-        keys = {k for k in self._keys.keys() if not self._is_negation(k)}
-        for k in value.serializable_keys.union(keys):
-            if self._is_valid(k):
+        # Check not negative keys from schema
+        keys = self.schema.get_heads()
+        # And model's keys
+        keys.update(set(value.serializable_keys))
+        for k in keys:
+            if self.schema.is_valid(k):
                 v = getattr(value, k)
+                logger.info('Serialize key:%s' % k)
                 res[k] = self._fork(key=k, value=v)
             else:
                 logger.info('Skipped KEY:%s' % k)
@@ -226,9 +138,232 @@ class IsNotSerializable(Exception):
     pass
 
 
+class Schema(object):
+    _DELIM = '.'
+    _NEGATION = '-'
+
+    def __init__(self, only=(), extend=()):
+        only = set(only)
+        extend = set(extend)
+        rules = set()
+        self.tree = {}
+        for r in only:
+            rule = Rule(text=r)
+            # Negative rules can not be in "only", move them to "extend"
+            if rule.is_negative:
+                only.remove(r)
+                extend.add(r)
+            else:
+                rules.add(rule)
+
+        for r in extend:
+            rules.add(Rule(text=r))
+
+        self.is_greedy = not bool(only)
+        logger.info('Set schema is_greedy:%s, rules:%s' % (self.is_greedy, rules))
+        self.update_tree(rules)
+
+    def __repr__(self):
+        return 'Schema(is_greedy=%s, only=%s, extend=%s)' % (
+            self.is_greedy, str(self.fork()['only']), str(self.fork()['extend'])
+        )
+
+    def is_valid(self, key):
+        rule = self.tree.get(Rule._to_negative(key))
+        if rule is not None and not rule:
+            return False
+        return key in self.tree or self.is_greedy
+
+    def update_tree(self, rules):
+        logger.info('Update schema with rules:%s' % rules)
+        for rule in rules:
+            head, tail = rule.divide()
+
+            # Look for opposite rules
+            if head.to_opposite() in self.tree:
+                if not tail:
+                    if not self.tree[head.to_opposite()]:
+                        # ignore rule because there's already an opposite one
+                        continue
+                elif tail.to_opposite() in self.tree[head.to_opposite()]:
+                    # ignore rule because there's already an opposite one
+                    continue
+
+            if head in self.tree:
+                if tail:
+                    self.tree[head].add(tail)
+            else:
+                self.tree[head] = {tail} if tail else set()
+        logger.info('Set tree:%s' % self.tree)
+
+    def get_rules(self, key=None):
+        rules = set()
+        if key:
+            for rule in self.tree.get(key, []):
+                if rule:
+                    rules.add(rule)
+            for rule in self.tree.get(Rule._to_negative(key), []):
+                assert rule, 'key:%s has empty branch of rules' % Rule._to_negative(key)
+                rules.add(rule)
+        else:
+            for head, bunch in self.tree.items():
+                if bunch:
+                    for rule in bunch:
+                        rules.add(head.concat(rule))
+                else:
+                    rules.add(head)
+        return rules
+
+    def get_heads(self):
+        return {k.text for k in self.tree.keys() if not k.is_negative}
+
+    def fork(self, key=None):
+        only = set()
+        extend = set()
+        for rule in self.get_rules(key=key):
+            if rule.is_negative or self.is_greedy:
+                extend.add(rule.text)
+            else:
+                only.add(rule.text)
+        return dict(
+            only=only,
+            extend=extend
+        )
+
+    def merge(self, only=(), extend=()):
+        """
+        Merges new rules into schema
+        :param only:
+        :param extend:
+        :return:
+        """
+        res = set()
+        if only:
+            self.is_greedy = False
+        logger.info('Merge into schema only:%s extend:%s' % (only, extend))
+        for r in only + extend:
+            rule = Rule(text=r)
+            head, tail = rule.divide()
+            branch = self.tree.get(head.to_opposite(), [])
+            if tail and tail.to_opposite() in branch:
+                logger.info(
+                    'Do not merge rule:%s, found opposite one:%s in tree' %
+                    (rule, tail.to_opposite())
+                )
+                continue
+            res.add(rule)
+        self.update_tree(res)
+
+
+class Rule(object):
+    _DELIM = '.'
+    _NEGATION = '-'
+
+    def __init__(self, text):
+        assert isinstance(text, str), 'Text in rule should be a string, got:%s' % type(text)
+        assert text, 'Can not create Rule without text'
+        self.text = text
+
+    def __lt__(self, other):
+        return self.text < other
+
+    def __le__(self, other):
+        return self.text <= other
+
+    def __eq__(self, other):
+        return self.text == other
+
+    def __ne__(self, other):
+        return self.text != other
+
+    def __gt__(self, other):
+        return self.text > other
+
+    def __ge__(self, other):
+        return self.text >= other
+
+    def __hash__(self):
+        return hash(self.text)
+
+    def __repr__(self):
+        return 'Rule(%s)' % self.text
+
+    @classmethod
+    def _to_list(cls, string):
+        """
+        :param string:  "-prop1.prop2"
+        :return: list: ['-prop1', 'prop2']
+        """
+        return string.split(cls._DELIM)
+
+    @classmethod
+    def _to_string(cls, chain):
+        """
+        :param chain: list | tuple ['-prop1', 'prop2']
+        :return: str: "-prop1.prop2"
+        """
+        return cls._DELIM.join(chain)
+
+    @classmethod
+    def _to_negative(cls, string):
+        """
+        :param string: "prop1.prop2"
+        :return: str: "-prop1.prop2"
+        """
+        return '%s%s' % (cls._NEGATION, string)
+
+    @classmethod
+    def _to_positive(cls, string):
+        """
+        :param string: "-prop1.prop2"
+        :return: str: "prop1.prop2"
+        """
+        return string[len(cls._NEGATION):]
+
+    @property
+    def is_negative(self):
+        return self.text.startswith(self._NEGATION)
+
+    def negate(self):
+        if not self.is_negative:
+            return Rule(text=Rule._to_negative(self.text))
+        return Rule(text=self.text)
+
+    def admit(self):
+        if self.is_negative:
+            return Rule(text=Rule._to_positive(self.text))
+        return Rule(text=self.text)
+
+    def divide(self):
+        head, *tail = Rule._to_list(self.text)
+        logger.info('Split %s into %s and %s' % (self.text, head, tail))
+        head = Rule(head)
+        if tail:
+            tail = Rule(Rule._to_string(tail))
+        if head.is_negative and tail:
+            tail = tail.negate()
+        return head, tail
+
+    def concat(self, rule):
+        assert isinstance(rule, Rule), 'Argument is not an instance of Rule class'
+        rule = rule.admit()
+        return Rule(text=Rule._to_string([self.text, rule.text]))
+
+    def to_opposite(self):
+        if self.is_negative:
+            return self.admit()
+        return self.negate()
+
+
 class SerializerMixin(object):
-    """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format"""
-    __schema__ = ()  # default schema, define it in your model
+    """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain"""
+
+    # Default exclusive schema.
+    # If left blank, serializer become greedy and take all SQLAlchemy-model's attributes
+    __schema_only__ = ()
+
+    # Additions to default schema. Can include negative rules
+    __schema_extend__ = ()
 
     @property
     def serializable_keys(self):
@@ -237,16 +372,15 @@ class SerializerMixin(object):
         """
         return {a.key for a in sql_inspect(self).mapper.attrs}
 
-    def to_dict(self, schema=(), extend=(), date_format=None, datetime_format=None, to_user_tz=False):
+    def to_dict(self, only=(), extend=(), date_format=None, datetime_format=None, to_user_tz=False):
         r"""
-        Returns SQLAlchemy model's data in JSON compatible format\n
+        Returns SQLAlchemy model's data in JSON compatible format
 
-        :param schema: iterable schema to replace existing one
-        :param extend: iterable schema to extend existing one
+        :param only: exclusive schema to replace default one
+        :param extend: schema to extend default one or schema defined in "only"
         :param date_format: str in Babel format
         :param datetime_format: str in Babel format
         :param to_user_tz: whether or not convert datetimes to local user timezone (Babel)
-
         :return: data: dict
         """
         s = Serializer(
@@ -254,5 +388,5 @@ class SerializerMixin(object):
             datetime_format=datetime_format,
             to_user_tz=to_user_tz
         )
-        return s(self, schema=schema, extend=extend)
+        return s(self, only=only, extend=extend)
 
