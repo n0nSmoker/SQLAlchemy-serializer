@@ -35,6 +35,37 @@ def test_simple_model_mixed_schema(simple_model_with_nosql_field):
     assert 'null' in data and data['null'] == m.nosql_field[0].null
 
 
+def test_simple_model_exclusive_schema(simple_model_with_nosql_field):
+    m = simple_model_with_nosql_field
+    data = m.to_dict(only=('id',))
+    assert len(data.keys()) == 1
+    assert 'id' in data and data['id'] == m.id
+
+
+def test_simple_model_exclusive_schema2(simple_model_with_nosql_field):
+    m = simple_model_with_nosql_field
+    data = m.to_dict(only=('nosql_field.id', 'id'))
+    assert len(data.keys()) == 2
+    assert 'id' in data and data['id'] == m.id
+    assert 'nosql_field' in data
+    assert 'id' in data['nosql_field'][0]
+    assert data['nosql_field'][0]['id'] == m.nosql_field[0].id
+    assert len(data['nosql_field'][0].keys()) == 1
+
+
+def test_simple_model_extended_schema(simple_model_with_nosql_field):
+    m = simple_model_with_nosql_field
+    data = m.to_dict(extend=('-nosql_field', '_method'))
+    assert 'id' in data and data['id'] == m.id
+    assert 'string' in data and data['string'] == m.string
+    assert 'time_at' in data and data['time_at']
+    assert 'date_at' in data and data['date_at']
+    assert 'boolean' in data and data['boolean'] == m.boolean
+    assert 'null' in data and data['null'] == m.null
+    assert 'nosql_field' not in data
+
+
+
 # def test_simple_flat_madel_with_default_schema_positive(flat_model):
 #     m = flat_model
 #     m.__schema_only__ = ('time_at', 'boolean2')

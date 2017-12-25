@@ -13,6 +13,9 @@ class NoRelationshipModel(db.Model, SerializerMixin):
     null = db.Column(db.String)
     nosql_field = None
 
+    def _method(self):
+        return 'User defined method %s' % self.string
+
 
 class Many2OneModel(db.Model, SerializerMixin):
     __tablename__ = 'many2one_model'

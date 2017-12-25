@@ -3,6 +3,8 @@ import logging
 import inspect
 
 from collections import Iterable
+from types import MethodType
+
 from sqlalchemy import inspect as sql_inspect
 from lib.timezones import to_local_time, format_date, format_datetime
 
@@ -45,7 +47,7 @@ class Serializer(object):
         elif isinstance(value, SerializerMixin):
             self.schema.merge(
                 only=value.__schema_only__,
-                extend=value.__schema_extend__
+                extend=value.__schema_extend__ if self.schema.is_greedy else ()
             )
             return self.serialize_model(value)
 
@@ -71,6 +73,8 @@ class Serializer(object):
     def is_valid_callable(func):
         if callable(func):
             i = inspect.getfullargspec(func)
+            if i.args == ['self'] and isinstance(func, MethodType) and not any([i.varargs, i.varkw]):
+                return True
             return not any([i.args, i.varargs, i.varkw])
         return False
 
