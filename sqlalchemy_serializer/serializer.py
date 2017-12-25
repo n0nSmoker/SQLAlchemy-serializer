@@ -146,20 +146,19 @@ class Schema(object):
         only = set(only)
         extend = set(extend)
         rules = set()
+        neg_rules = set()
         self.tree = {}
         for r in only:
             rule = Rule(text=r)
-            # Negative rules can not be in "only", move them to "extend"
+            # Negative rules should be removed from only-container
             if rule.is_negative:
-                only.remove(r)
-                extend.add(r)
-            else:
-                rules.add(rule)
+                neg_rules.add(r)
+            rules.add(rule)
 
         for r in extend:
             rules.add(Rule(text=r))
 
-        self.is_greedy = not bool(only)
+        self.is_greedy = not bool(only - neg_rules)
         logger.info('Set schema is_greedy:%s, rules:%s' % (self.is_greedy, rules))
         self.update_tree(rules)
 
