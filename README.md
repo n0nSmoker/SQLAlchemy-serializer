@@ -1,5 +1,5 @@
 # SQLAlchemy-serializer
-## Mixin for sqlalchemy-models serialization without pain.
+Mixin for sqlalchemy-models serialization without pain.
 
 If you want SQLAlchemy model to become serializable,
 add **SerializerMixin** in class definition:
