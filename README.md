@@ -1,4 +1,4 @@
-#SQLAlchemy-serializer
+# SQLAlchemy-serializer
 ## Mixin for sqlalchemy-models serialization without pain.
 
 If you want SQLAlchemy model to become serializable,
@@ -150,4 +150,3 @@ dict(
 
 # Troubleshooting
 
- 
