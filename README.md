@@ -1,21 +1,66 @@
-# SQLAlchemy-serializer
-Mixin for sqlalchemy-models serialization without pain.
+#SQLAlchemy-serializer
+## Mixin for sqlalchemy-models serialization without pain.
 
+If you want SQLAlchemy model to become serializable,
+add **SerializerMixin** in class definition:
+```python
+class SomeModel(db.Model, SerializerMixin):
+    ...
+```
 
-# Usage (more examples in tests):
+This mixin adds **.to_dict()** method to model instances.
+So now if you can do something like this:
+```python
+item = SomeModel.query.filter(.....).one()
+result = item.to_dict()
+```
+You'll get values of all SQLAlchemy fields in result, even nested relationship
 
+If you want to exclude a few fields for this exact item:
+```python
+result = item.to_dict(extend=('-somefield', '-anotherone.nestedfield.even_a_list'))
+```
+
+If you want to add a field which is not defined as an SQLAlchemy field:
+```python
+class SomeModel(db.Model, SerializerMixin):
+    non_sql_field = 123
+
+    def a_method(self):
+        return anything
+
+result = item.to_dict(extend=('non_sql_field', 'a_method'))
+```
+Note that method or a function should have no arguments except ***self***,
+in order to let serializer call it without hesitations.
+
+If you want to get exact fields:
 ```python
 
+result = item.to_dict(only=('non_sql_field', 'a_method', 'somefield'))
+```
+Note that if ***somefield*** is an SQLAlchemy instance, you get all it's
+serializable fields.
 
+If you want to define schema for all instances of particular SQLAlchemy model:
+
+```python
+class SomeModel(db.Model, SerializerMixin):
+    __schema_only__ = ('somefield', '-somefield.id')
+    __schema_extend__ = ()
+    somefield = db.relationship('AnotherModel')
+
+result = item.to_dict()
+```
+***__schema_only__*** and  ***__schema_extend__*** work the same way as ***to_dict's*** arguments
+
+
+
+# Detailed example (For more examples see tests):
+
+```python
 class FlatModel(db.Model, SerializerMixin):
-
-    # If you define schema here, serializer will become NOT greedy
-    # and will take only the attributes you defined
-    # Otherwise it will be greedy and will take all SQLAlchemy attributes
-    # You can use dot notation to define nested attributes
     __schema_only__ = ('non_sqlalchemy_field', '-id')
-
-    # Schema may be extended here
     __schema_extend__ = ()
 
     __tablename__ = 'test_flat_model'
@@ -30,7 +75,6 @@ class FlatModel(db.Model, SerializerMixin):
 
 
 class ComplexModel(db.Model, SerializerMixin):
-
     # schema is not defined so
     # we will get all SQLALCHEMY attributes of the instance by default
 
@@ -105,3 +149,5 @@ dict(
 ```
 
 # Troubleshooting
+
+ 
