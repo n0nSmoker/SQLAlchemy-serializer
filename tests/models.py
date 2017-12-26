@@ -13,7 +13,7 @@ class NoRelationshipModel(db.Model, SerializerMixin):
     null = db.Column(db.String)
     nosql_field = None
 
-    def _method(self):
+    def _protected_method(self):
         return 'User defined method %s' % self.string
 
 
