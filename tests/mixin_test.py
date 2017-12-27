@@ -1,6 +1,6 @@
 import pytest
 from tests import logger
-
+from tests.models import NoRelationshipModel
 
 def test_simple_model_no_schema(simple_model_with_nosql_field):
     m = simple_model_with_nosql_field
@@ -161,4 +161,22 @@ def test_complex_model_extend_schema(complex_model):
     assert 'null' in data and data['null'] == m.rel.rel[0].null
     assert '_protected_method' in data and data['_protected_method'] == m.rel.rel[0]._protected_method()
     assert 'nosql_field' in data
+
+
+def test_complex_model_extend_priority_schema(complex_model):
+    NoRelationshipModel.__schema_only__ = ('id', 'nosql_field')
+    m = complex_model
+    data = m.to_dict(only=('rel.rel.id', 'id'))
+    assert 'id' in data and data['id'] == m.id
+    assert 'rel' in data and data['rel']
+    assert len(data.keys()) == 2
+    data = data['rel']
+    assert 'rel' in data and data['rel']
+    assert len(data.keys()) == 1
+    assert isinstance(data['rel'], list)
+    data = data['rel'][0]
+    assert 'id' in data and m.rel.rel[0].id
+    assert 'nosql_field' not in data
+    assert len(data.keys()) == 1
+
 

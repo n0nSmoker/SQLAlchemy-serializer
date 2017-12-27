@@ -46,7 +46,7 @@ class Serializer(object):
 
         elif isinstance(value, SerializerMixin):
             self.schema.merge(
-                only=value.__schema_only__,
+                only=value.__schema_only__ if self.schema.is_greedy else (),
                 extend=value.__schema_extend__ if self.schema.is_greedy else ()
             )
             return self.serialize_model(value)
@@ -243,7 +243,7 @@ class Schema(object):
         res = set()
         if only:
             self.is_greedy = False
-        logger.info('Merge into schema only:%s extend:%s' % (only, extend))
+        logger.info('Merge rules into schema only:%s extend:%s' % (only, extend))
         for r in only + extend:
             rule = Rule(text=r)
             head, tail = rule.divide()

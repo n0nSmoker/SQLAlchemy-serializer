@@ -1,6 +1,14 @@
 # SQLAlchemy-serializer
 Mixin for sqlalchemy-models serialization without pain.
 
+## Installation
+
+```
+pip install sqlalchemy_serializer
+```
+
+## Usage
+
 If you want SQLAlchemy model to become serializable,
 add **SerializerMixin** in class definition:
 ```python
