@@ -4,7 +4,7 @@ Mixin for sqlalchemy-models serialization without pain.
 ## Installation
 
 ```
-pip install sqlalchemy_serializer
+pip install SQLAlchemy-serializer
 ```
 
 ## Usage
