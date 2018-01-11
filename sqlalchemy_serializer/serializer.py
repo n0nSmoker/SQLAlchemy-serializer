@@ -6,7 +6,7 @@ from collections import Iterable
 from types import MethodType
 
 from sqlalchemy import inspect as sql_inspect
-from lib.timezones import to_local_time, format_date, format_datetime
+from .lib.timezones import to_local_time, format_date, format_datetime
 
 
 logger = logging.getLogger('serializer')
