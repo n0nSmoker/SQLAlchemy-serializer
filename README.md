@@ -12,6 +12,9 @@ pip install SQLAlchemy-serializer
 If you want SQLAlchemy model to become serializable,
 add **SerializerMixin** in class definition:
 ```python
+from sqlalchemy_serializer import SerializerMixin
+
+
 class SomeModel(db.Model, SerializerMixin):
     ...
 ```
