@@ -2,6 +2,7 @@ import pytest
 from tests import logger
 from tests.models import NoRelationshipModel
 
+
 def test_simple_model_no_schema(simple_model_with_nosql_field):
     m = simple_model_with_nosql_field
     data = m.to_dict()
@@ -19,6 +20,16 @@ def test_simple_model_no_schema(simple_model_with_nosql_field):
     assert 'date_at' in data and data['date_at']
     assert 'boolean' in data and data['boolean'] == m.nosql_field[0].boolean
     assert 'null' in data and data['null'] == m.nosql_field[0].null
+
+
+def test_dict_field_no_schema(simple_model_with_dict_field):
+    m = simple_model_with_dict_field
+    data = m.to_dict()
+    assert 'id' in data and data['id'] == m.id
+    assert 'nosql_field' in data and data['nosql_field'].keys() == m.nosql_field.keys()
+    for k, v in m.nosql_field.items():
+        assert k in data['nosql_field']
+        assert data['nosql_field'][k] == v
 
 
 def test_simple_model_mixed_schema(simple_model_with_nosql_field):

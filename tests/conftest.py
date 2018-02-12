@@ -1,5 +1,5 @@
 import pytest
-from flask_builder import create_app, create_db, drop_db, create_tables, get_config_name, db
+from flask_builder import create_app, create_db, drop_db, create_tables, db, init_app
 
 from tests import logger
 from tests.models import NoRelationshipModel, Many2OneModel, Many2manyModel
@@ -16,6 +16,8 @@ def app(request):
     # dsn = config.SQLALCHEMY_DATABASE_URI
     # dsn = dsn[:dsn.rfind('/')] + '/%s' % APP_NAME.lower()  # Change DB-name
     config = {}
+    # dsn = 'postgresql+psycopg2://yuribro:@localhost:5432/serializer_mixin_test'
+
     dsn = 'postgresql+psycopg2://postgres:root!@localhost:5432/serializer_mixin_test'
     drop_db(dsn)
     create_db(dsn)
@@ -25,7 +27,8 @@ def app(request):
     config['SQLALCHEMY_DATABASE_URI'] = dsn
     config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    app = create_app(name=APP_NAME, config=config)
+    app = create_app(name=APP_NAME)
+    app = init_app(app, config=config)
 
     # Establish an application context before running the tests.
     ctx = app.app_context()
@@ -84,6 +87,24 @@ def simple_model_with_nosql_field(session):
     m.nosql_field = [m1]
     session.add(m)
     session.add(m1)
+    session.commit()
+    return m
+
+
+@pytest.fixture(scope='function')
+def simple_model_with_dict_field(session):
+    # NoSQLAlchemy field should be defined explicitly
+    NoRelationshipModel.__schema_extend__ = ('nosql_field',)
+    m = NoRelationshipModel()
+    m.nosql_field = dict(
+        a=1,
+        b=2,
+        c=dict(
+            a=22,
+            b='qwerty'
+        )
+    )
+    session.add(m)
     session.commit()
     return m
 

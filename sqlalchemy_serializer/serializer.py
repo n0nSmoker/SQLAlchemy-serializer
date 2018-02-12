@@ -41,6 +41,9 @@ class Serializer(object):
         elif isinstance(value, date):
             return self.serialize_date(value)
 
+        elif isinstance(value, dict):
+            return self.serialize_dict(value)
+
         elif isinstance(value, Iterable):
             return self.serialize_iter(value)
 
@@ -50,9 +53,6 @@ class Serializer(object):
                 extend=value.__schema_extend__ if self.schema.is_greedy else ()
             )
             return self.serialize_model(value)
-
-        elif isinstance(value, dict):
-            return self.serialize_dict(value)
 
         else:
             raise IsNotSerializable('Malformed value')
