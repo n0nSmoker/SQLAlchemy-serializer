@@ -20,12 +20,12 @@ class SomeModel(db.Model, SerializerMixin):
 ```
 
 This mixin adds **.to_dict()** method to model instances.
-So now if you can do something like this:
+So now you can do something like this:
 ```python
 item = SomeModel.query.filter(.....).one()
 result = item.to_dict()
 ```
-You'll get values of all SQLAlchemy fields in result, even nested relationship
+You'll get values of all SQLAlchemy fields in the `result` var, even nested relationships
 
 If you want to exclude a few fields for this exact item:
 ```python
@@ -160,4 +160,5 @@ dict(
 ```
 
 # Troubleshooting
+If you've faced with 'maximum recursion depth exceeded' exception, most likely serializer have found instance of the same class somewhere among model's relationships. You need to exclude it from schema or specify the exact properties to serialize.
 
