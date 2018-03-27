@@ -10,7 +10,7 @@ from .lib.timezones import to_local_time, format_date, format_datetime
 
 
 logger = logging.getLogger('serializer')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARN)
 
 
 class Serializer(object):
