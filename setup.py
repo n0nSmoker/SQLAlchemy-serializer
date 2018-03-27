@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='SQLAlchemy-serializer',
-      version='0.9',
+      version='0.91',
       description='Mixin for SQLAlchemy-models serialization without pain',
       author='Y-Bro',
       url='https://github.com/n0nSmoker/SQLAlchemy-serializer.git',
