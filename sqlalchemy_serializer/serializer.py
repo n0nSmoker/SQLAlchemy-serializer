@@ -63,11 +63,11 @@ class Serializer(object):
 
     @property
     def datetime_format(self):
-        return self.kwargs.get('datetime_format') or '%Y-%m-%d %H:%M'
+        return self.kwargs.get('datetime_format') or self.__schema_datetime_format__
 
     @property
     def date_format(self):
-        return self.kwargs.get('date_format') or '%Y-%m-%d'
+        return self.kwargs.get('date_format') or self.__schema_date_format__
 
     @staticmethod
     def is_valid_callable(func):
@@ -368,6 +368,12 @@ class SerializerMixin(object):
     # Additions to default schema. Can include negative rules
     __schema_extend__ = ()
 
+    # Default date format
+    __schema_date_format__ = '%Y-%m-%d'
+    
+    # Default datetime format
+    __schema_datetime_format__ = '%Y-%m-%d %H:%M'
+    
     @property
     def serializable_keys(self):
         """
