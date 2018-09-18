@@ -63,11 +63,11 @@ class Serializer(object):
 
     @property
     def datetime_format(self):
-        return self.kwargs.get('datetime_format') or self.__schema_datetime_format__
+        return self.kwargs.get('datetime_format')
 
     @property
     def date_format(self):
-        return self.kwargs.get('date_format') or self.__schema_date_format__
+        return self.kwargs.get('date_format')
 
     @staticmethod
     def is_valid_callable(func):
@@ -393,8 +393,8 @@ class SerializerMixin(object):
         :return: data: dict
         """
         s = Serializer(
-            date_format=date_format,
-            datetime_format=datetime_format,
+            date_format=date_format or self.__schema_date_format__,
+            datetime_format=datetime_format or self.__schema_datetime_format__,
             to_user_tz=to_user_tz
         )
         return s(self, only=only, extend=extend)
