@@ -1,0 +1,21 @@
+version: '3.4'
+x-environment: &environment
+  environment:
+    - POSTGRES_HOST=db
+    - POSTGRES_DB=db_name
+    - POSTGRES_USER=root
+    - POSTGRES_PASSWORD=password
+
+services:
+  tests:
+    build: .
+    command: ["pytest", "--pylama", "--cov=sqlalchemy_serializer", "--cov-report", "term-missing"]
+
+    depends_on:
+      - db
+    <<: *environment
+
+  db:
+    image: postgres:latest
+    <<: *environment
+

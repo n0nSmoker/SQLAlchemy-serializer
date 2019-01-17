@@ -1,0 +1,4 @@
+pytest==3.3.1
+pytest-cov==2.5.1
+pylama==7.4.3
+requests==2.20.0

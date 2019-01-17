@@ -7,6 +7,6 @@ logging.basicConfig(
 )
 
 
-logger = logging.getLogger('serializer:test')
+logger = logging.getLogger('serializer')
 logger.setLevel(logging.INFO)
 

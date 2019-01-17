@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 import logging
 import inspect
 
@@ -6,34 +6,46 @@ from collections import Iterable
 from types import MethodType
 
 from sqlalchemy import inspect as sql_inspect
-from .lib.timezones import to_local_time, format_date, format_datetime
+
+from .lib.utils import get_type
+from .lib.timezones import to_local_time, format_dt
 
 
 logger = logging.getLogger('serializer')
 logger.setLevel(logging.WARN)
 
 
+DELIM = '.'      # Delimiter to separate nested rules
+NEGATION = '-'   # Prefix for negative rules
+
+
 class Serializer(object):
-    simple_types = (int, str, float, bytes, bool, type(None))
+    """
+    All serialization logic is implemented here
+    """
+    simple_types = (int, str, float, bytes, bool, type(None))  # Types that do nod need any serialization logic
 
     def __init__(self, **kwargs):
         """
         :date_format: str Babel-format
         :datetime_format: str Babel-format
-        :to_user_tz: bool
+        :tzinfo: datetime.tzinfo
         """
-        self.kwargs = kwargs
+        self.opts = kwargs
         self.schema = None
 
     def __call__(self, value, only=(), extend=()):
         self.schema = Schema(only=only, extend=extend)
 
-        logger.info('Called %s value:%s' % (self.schema, value))
+        logger.info(f'Call serializer for type:{get_type(value)}')
         if self.is_valid_callable(value):
             value = value()
 
         if isinstance(value, self.simple_types):
             return value
+
+        elif isinstance(value, time):  # Should be always before datetime
+            return self.serialize_time(value)
 
         elif isinstance(value, datetime):
             return self.serialize_datetime(value)
@@ -49,28 +61,21 @@ class Serializer(object):
 
         elif isinstance(value, SerializerMixin):
             self.schema.merge(
-                only=value.__schema_only__ if self.schema.is_greedy else (),
-                extend=value.__schema_extend__ if self.schema.is_greedy else ()
+                only=value.serialize_only if self.schema.is_greedy else (),
+                extend=value.serialize_rules if self.schema.is_greedy else ()
             )
             return self.serialize_model(value)
 
         else:
             raise IsNotSerializable('Malformed value')
 
-    @property
-    def to_user_tz(self):
-        return bool(self.kwargs.get('to_user_tz', False))
-
-    @property
-    def datetime_format(self):
-        return self.kwargs.get('datetime_format')
-
-    @property
-    def date_format(self):
-        return self.kwargs.get('date_format')
-
     @staticmethod
     def is_valid_callable(func):
+        """
+        Determines objects that should be called before serialization
+        :param func:
+        :return: bool
+        """
         if callable(func):
             i = inspect.getfullargspec(func)
             if i.args == ['self'] and isinstance(func, MethodType) and not any([i.varargs, i.varkw]):
@@ -78,7 +83,7 @@ class Serializer(object):
             return not any([i.args, i.varargs, i.varkw])
         return False
 
-    def _fork(self, value, key=None):
+    def fork(self, value, key=None):
         """
         Process data in a separate serializer
         :param value:
@@ -87,42 +92,85 @@ class Serializer(object):
         """
         if isinstance(value, self.simple_types):
             return value
-        serializer = Serializer(**self.kwargs)
+        serializer = Serializer(**self.opts)
         kwargs = self.schema.fork(key=key)
-        logger.info('Fork serializer kwargs:%s, value=%s' % (str(kwargs), value))
+        logger.info(f'Fork serializer for type:{get_type(value)} with kwargs:{kwargs}')
         return serializer(value, **kwargs)
 
     def serialize_datetime(self, value):
-        if self.to_user_tz:
-            value = to_local_time(value)
-            return format_datetime(value, self.datetime_format, rebase=False)
-        return value.strftime(self.datetime_format)
+        """
+        datetime.datetime serialization logic
+        :param value:
+        :return: serialized value
+        """
+        tz = self.opts.get('tzinfo')
+        if tz:
+            value = to_local_time(dt=value, tzinfo=tz)
+        return format_dt(
+            tpl=self.opts.get('datetime_format'),
+            dt=value
+        )
 
     def serialize_date(self, value):
-        if self.to_user_tz:
-            return format_date(value, self.date_format, rebase=False)
-        return value.strftime(self.date_format)
+        """
+        datetime.date serialization logic
+        :param value:
+        :return: serialized value
+        """
+        tz = self.opts.get('tzinfo')
+        if tz:
+            value = to_local_time(dt=value, tzinfo=tz)
+        return format_dt(
+            tpl=self.opts.get('date_format'),
+            dt=value
+        )
+
+    def serialize_time(self, value):
+        """
+        datetime.time serialization logic
+        :param value:
+        :return: serialized value
+        """
+        return format_dt(
+            tpl=self.opts.get('time_format'),
+            dt=value
+        )
 
     def serialize_iter(self, value):
+        """
+        Serialization logic for any iterable object
+        :param value:
+        :return: list
+        """
         res = []
         for v in value:
             try:
-                res.append(self._fork(value=v))
+                res.append(self.fork(value=v))
             except IsNotSerializable:
                 continue
         return res
 
     def serialize_dict(self, value):
+        """
+        Serialization logic for any dict
+        :param value:
+        :return: dict
+        """
         res = {}
         for k, v in value.items():
             if self.schema.is_valid(k):
-                logger.info('Serialize key:%s' % k)
-                res[k] = self._fork(key=k, value=v)
+                logger.info(f'Serialize key:{k} type:{get_type(v)} of dict')
+                res[k] = self.fork(key=k, value=v)
             else:
-                logger.info('Skipped key:%s' % k)
+                logger.info(f'Skip key:{k} of dict')
         return res
 
     def serialize_model(self, value):
+        """
+        Serialization logic for instances of SerializerMixin
+        :param value:
+        :return: dict
+        """
         res = {}
         # Check not negative keys from schema
         keys = self.schema.get_heads()
@@ -131,10 +179,10 @@ class Serializer(object):
         for k in keys:
             if self.schema.is_valid(k):
                 v = getattr(value, k)
-                logger.info('Serialize key:%s' % k)
-                res[k] = self._fork(key=k, value=v)
+                logger.info(f'Serialize key:{k} type:{get_type(v)} model:{get_type(value)}')
+                res[k] = self.fork(key=k, value=v)
             else:
-                logger.info('Skipped KEY:%s' % k)
+                logger.info(f'Skip key:{k} of model:{get_type(value)}')
         return res
 
 
@@ -143,9 +191,9 @@ class IsNotSerializable(Exception):
 
 
 class Schema(object):
-    _DELIM = '.'
-    _NEGATION = '-'
-
+    """
+    Storage for serialization rules
+    """
     def __init__(self, only=(), extend=()):
         only = set(only)
         extend = set(extend)
@@ -163,22 +211,35 @@ class Schema(object):
             rules.add(Rule(text=r))
 
         self.is_greedy = not bool(only - neg_rules)
-        logger.info('Set schema is_greedy:%s, rules:%s' % (self.is_greedy, rules))
+        logger.info(f'Init schema is_greedy:{self.is_greedy} rules:{rules}')
         self.update_tree(rules)
 
     def __repr__(self):
-        return 'Schema(is_greedy=%s, only=%s, extend=%s)' % (
-            self.is_greedy, str(self.fork()['only']), str(self.fork()['extend'])
-        )
+        schema = self.fork()
+        return f'Schema(is_greedy={self.is_greedy}, only={schema["only"]}, extend={schema["extend"]})'
 
     def is_valid(self, key):
-        rule = self.tree.get(Rule._to_negative(key))
+        """
+        Turns key into a rule and checks that value of this key needs to be serialized
+        :param key:
+        :return:
+        """
+        rule = self.tree.get(Rule.to_negative(key))
         if rule is not None and not rule:
             return False
         return key in self.tree or self.is_greedy
 
     def update_tree(self, rules):
-        logger.info('Update schema with rules:%s' % rules)
+        """
+        Safely updates tree with new rules
+        :param rules:
+        :return:
+        """
+        # Avoid useless logging
+        if not rules:
+            return
+
+        logger.info(f'Update schema with rules:{rules}')
         for rule in rules:
             head, tail = rule.divide()
 
@@ -197,7 +258,7 @@ class Schema(object):
                     self.tree[head].add(tail)
             else:
                 self.tree[head] = {tail} if tail else set()
-        logger.info('Set tree:%s' % self.tree)
+        # logger.info(f'Got tree:{self.tree}')
 
     def get_rules(self, key=None):
         rules = set()
@@ -205,8 +266,8 @@ class Schema(object):
             for rule in self.tree.get(key, []):
                 if rule:
                     rules.add(rule)
-            for rule in self.tree.get(Rule._to_negative(key), []):
-                assert rule, 'key:%s has empty branch of rules' % Rule._to_negative(key)
+            for rule in self.tree.get(Rule.to_negative(key), []):
+                assert rule, f'Key:{Rule.to_negative(key)} has empty branch of rules'
                 rules.add(rule)
         else:
             for head, bunch in self.tree.items():
@@ -218,9 +279,18 @@ class Schema(object):
         return rules
 
     def get_heads(self):
+        """
+        Returns top-level non-negative keys
+        :return: set
+        """
         return {k.text for k in self.tree.keys() if not k.is_negative}
 
     def fork(self, key=None):
+        """
+        Returns a branch of schema rules for exact key
+        :param key:
+        :return: dict(only, extend)
+        """
         only = set()
         extend = set()
         for rule in self.get_rules(key=key):
@@ -235,35 +305,30 @@ class Schema(object):
 
     def merge(self, only=(), extend=()):
         """
-        Merges new rules into schema
+        Merges new schema into existing one
         :param only:
         :param extend:
         :return:
         """
-        res = set()
-        if only:
-            self.is_greedy = False
-        logger.info('Merge rules into schema only:%s extend:%s' % (only, extend))
-        for r in only + extend:
-            rule = Rule(text=r)
-            head, tail = rule.divide()
-            branch = self.tree.get(head.to_opposite(), [])
-            if tail and tail.to_opposite() in branch:
-                logger.info(
-                    'Do not merge rule:%s, found opposite one:%s in tree' %
-                    (rule, tail.to_opposite())
-                )
-                continue
-            res.add(rule)
-        self.update_tree(res)
+        if any([only, extend]):
+            res = set()
+            if only:
+                self.is_greedy = False
+            logger.info(f'Merge rules into schema only:{only} extend:{extend}')
+            for r in only + extend:
+                rule = Rule(text=r)
+                head, tail = rule.divide()
+                branch = self.tree.get(head.to_opposite(), [])
+                if tail and tail.to_opposite() in branch:
+                    logger.info(f'Can not merge rule:{rule}, found opposite one:{tail.to_opposite()}')
+                    continue
+                res.add(rule)
+            self.update_tree(res)
 
 
 class Rule(object):
-    _DELIM = '.'
-    _NEGATION = '-'
-
     def __init__(self, text):
-        assert isinstance(text, str), 'Text in rule should be a string, got:%s' % type(text)
+        assert isinstance(text, str), f'Text in rule should be a string, got:{get_type(text)}'
         assert text, 'Can not create Rule without text'
         self.text = text
 
@@ -289,113 +354,151 @@ class Rule(object):
         return hash(self.text)
 
     def __repr__(self):
-        return 'Rule(%s)' % self.text
+        return f'Rule({self.text})'
 
     @classmethod
-    def _to_list(cls, string):
+    def to_list(cls, string):
         """
         :param string:  "-prop1.prop2"
         :return: list: ['-prop1', 'prop2']
         """
-        return string.split(cls._DELIM)
+        return string.split(DELIM)
 
     @classmethod
-    def _to_string(cls, chain):
+    def to_string(cls, chain):
         """
         :param chain: list | tuple ['-prop1', 'prop2']
         :return: str: "-prop1.prop2"
         """
-        return cls._DELIM.join(chain)
+        return DELIM.join(chain)
 
     @classmethod
-    def _to_negative(cls, string):
+    def to_negative(cls, string):
         """
         :param string: "prop1.prop2"
         :return: str: "-prop1.prop2"
         """
-        return '%s%s' % (cls._NEGATION, string)
+        return '%s%s' % (NEGATION, string)
 
     @classmethod
-    def _to_positive(cls, string):
+    def to_positive(cls, string):
         """
         :param string: "-prop1.prop2"
         :return: str: "prop1.prop2"
         """
-        return string[len(cls._NEGATION):]
+        return string[len(NEGATION):]
 
     @property
     def is_negative(self):
-        return self.text.startswith(self._NEGATION)
+        """
+        Checks if rule is negation
+        :return: bool
+        """
+        return self.text.startswith(NEGATION)
 
     def negate(self):
+        """
+        Turns rule into negative one
+        :return: Rule
+        """
         if not self.is_negative:
-            return Rule(text=Rule._to_negative(self.text))
+            return Rule(text=Rule.to_negative(self.text))
         return Rule(text=self.text)
 
     def admit(self):
+        """
+        Turns rule into positive one
+        :return: Rule
+        """
         if self.is_negative:
-            return Rule(text=Rule._to_positive(self.text))
+            return Rule(text=Rule.to_positive(self.text))
         return Rule(text=self.text)
 
     def divide(self):
-        head, *tail = Rule._to_list(self.text)
-        logger.info('Split %s into %s and %s' % (self.text, head, tail))
+        """
+        Splits rule into two strings (top-level key and all other nested ones)
+        :return: tuple
+        """
+        head, *tail = Rule.to_list(self.text)
+        logger.info(f'Split {self.text} into {head} and {tail}')
         head = Rule(head)
         if tail:
-            tail = Rule(Rule._to_string(tail))
+            tail = Rule(Rule.to_string(tail))
         if head.is_negative and tail:
             tail = tail.negate()
         return head, tail
 
     def concat(self, rule):
+        """
+        Adds rule at the end of current one
+        :param rule:
+        :return: Rule
+        """
         assert isinstance(rule, Rule), 'Argument is not an instance of Rule class'
         rule = rule.admit()
-        return Rule(text=Rule._to_string([self.text, rule.text]))
+        return Rule(text=Rule.to_string([self.text, rule.text]))
 
     def to_opposite(self):
+        """
+        Turns positive rule into negative one and vice versa
+        :return: Rule
+        """
         if self.is_negative:
             return self.admit()
         return self.negate()
 
 
 class SerializerMixin(object):
-    """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain"""
+    """
+    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain
+    Can be inherited to redefine get_tzinfo callback, datetime formats or to add some extra serialization logic
+    """
 
     # Default exclusive schema.
-    # If left blank, serializer become greedy and take all SQLAlchemy-model's attributes
-    __schema_only__ = ()
+    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
+    serialize_only = ()
 
     # Additions to default schema. Can include negative rules
-    __schema_extend__ = ()
+    serialize_rules = ()
 
-    # Default date format
-    __schema_date_format__ = '%Y-%m-%d'
-    
-    # Default datetime format
-    __schema_datetime_format__ = '%Y-%m-%d %H:%M'
-    
+    date_format = '%Y-%m-%d'
+    datetime_format = '%Y-%m-%d %H:%M'
+    time_format = '%H:%M'
+
+    def get_tzinfo(self):
+        """
+        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        :return: datetime.tzinfo
+        """
+        return None
+
     @property
     def serializable_keys(self):
         """
-        :return: set of keys
+        :return: set of keys available for serialization
         """
         return {a.key for a in sql_inspect(self).mapper.attrs}
 
-    def to_dict(self, only=(), extend=(), date_format=None, datetime_format=None, to_user_tz=False):
-        r"""
+    def to_dict(self, only=(), rules=(), date_format=None, datetime_format=None, time_format=None, tzinfo=None):
+        """
         Returns SQLAlchemy model's data in JSON compatible format
 
-        :param only: exclusive schema to replace default one
-        :param extend: schema to extend default one or schema defined in "only"
-        :param date_format: str in Babel format
-        :param datetime_format: str in Babel format
-        :param to_user_tz: whether or not convert datetimes to local user timezone (Babel)
+        For details about datetime formats follow:
+        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
+        :param only: exclusive schema to replace default one (always have higher priority than rules)
+        :param rules: schema to extend default one or schema defined in "only"
+        :param date_format: str
+        :param datetime_format: str
+        :param time_format: str
+        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
         s = Serializer(
-            date_format=date_format or self.__schema_date_format__,
-            datetime_format=datetime_format or self.__schema_datetime_format__,
-            to_user_tz=to_user_tz
+            date_format=date_format or self.date_format,
+            datetime_format=datetime_format or self.datetime_format,
+            time_format=time_format or self.time_format,
+            tzinfo=tzinfo
         )
-        return s(self, only=only, extend=extend)
+        return s(self, only=only, extend=rules)
 

@@ -1,6 +1,15 @@
-from flask_babel import to_user_timezone, format_date, format_datetime
+
+def to_local_time(dt, tzinfo=None):
+    if not tzinfo:
+        return dt
+    normalized = tzinfo.normalize(dt.astimezone(tzinfo))
+    return normalized.replace(tzinfo=None)
 
 
-def to_local_time(t):
-    return to_user_timezone(t).replace(tzinfo=None)
+def format_dt(dt, tpl):
+    if not tpl:
+        return dt.isoformat()
+    return dt.strftime(tpl)
+
+
 
