@@ -32,6 +32,13 @@ class Serializer(object):
         self.schema = None
 
     def __call__(self, value, only=(), extend=()):
+        """
+        Serialization starts here
+        :param value: Value tu serialize
+        :param only: Exclusive schema of serialization
+        :param extend: Rules that extend default schema
+        :return: object: JSON-compatible object
+        """
         self.schema = Schema(only=only, extend=extend)
 
         logger.info(f'Call serializer for type:{get_type(value)}')

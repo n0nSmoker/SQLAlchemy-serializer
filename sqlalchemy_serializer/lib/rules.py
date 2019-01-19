@@ -13,6 +13,11 @@ class Schema(object):
     Storage for serialization rules
     """
     def __init__(self, only=(), extend=()):
+        """
+        Generate tree of rules here
+        :param only: Exclusive schema of serialization
+        :param extend: Rules that extend default schema
+        """
         only = set(only)
         extend = set(extend)
         rules = set()
@@ -33,6 +38,10 @@ class Schema(object):
         self.update_tree(rules)
 
     def __repr__(self):
+        """
+        Brief string representation mostly for nice logging
+        :return: str
+        """
         schema = self.fork()
         return f'Schema(is_greedy={self.is_greedy}, only={schema["only"]}, extend={schema["extend"]})'
 
@@ -40,7 +49,7 @@ class Schema(object):
         """
         Turns key into a rule and checks that value of this key needs to be serialized
         :param key:
-        :return:
+        :return: bool
         """
         rule = self.tree.get(Rule.to_negative(key))
         if rule is not None and not rule:
@@ -79,6 +88,11 @@ class Schema(object):
         # logger.info(f'Got tree:{self.tree}')
 
     def get_rules(self, key=None):
+        """
+        Returns branch for exact key or the whole tree if key is None
+        :param key: str
+        :return: set of rules
+        """
         rules = set()
         if key:
             for rule in self.tree.get(key, []):
@@ -105,7 +119,7 @@ class Schema(object):
 
     def fork(self, key=None):
         """
-        Returns a branch of schema rules for exact key
+        Returns only and extend params for exact key to use them in serializer
         :param key:
         :return: dict(only, extend)
         """
