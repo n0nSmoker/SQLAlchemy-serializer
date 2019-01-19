@@ -29,7 +29,7 @@ You'll get values of all SQLAlchemy fields in the `result` var, even nested rela
 
 If you want to exclude a few fields for this exact item:
 ```python
-result = item.to_dict(extend=('-somefield', '-anotherone.nestedfield.even_a_list'))
+result = item.to_dict(rules=('-somefield', '-anotherone.nested1.nested2'))
 ```
 
 If you want to add a field which is not defined as an SQLAlchemy field:
@@ -40,7 +40,7 @@ class SomeModel(db.Model, SerializerMixin):
     def a_method(self):
         return anything
 
-result = item.to_dict(extend=('non_sql_field', 'a_method'))
+result = item.to_dict(rules=('non_sql_field', 'a_method'))
 ```
 Note that method or a function should have no arguments except ***self***,
 in order to let serializer call it without hesitations.
@@ -53,32 +53,37 @@ result = item.to_dict(only=('non_sql_field', 'a_method', 'somefield'))
 Note that if ***somefield*** is an SQLAlchemy instance, you get all it's
 serializable fields.
 
-If you want to define schema for all instances of particular SQLAlchemy model:
+If you want to define schema for all instances of particular SQLAlchemy model,
+add serialize properties to model definition:
 
 ```python
 class SomeModel(db.Model, SerializerMixin):
-    __schema_only__ = ('somefield', '-somefield.id')
-    __schema_extend__ = ()
+    serialize_only = ('somefield.id',)
+    serialize_rules = ()
+    ...
     somefield = db.relationship('AnotherModel')
 
 result = item.to_dict()
-```
-***__schema_only__*** and  ***__schema_extend__*** work the same way as ***to_dict's*** arguments
+{'somefield':[{'id':...}]}
 
+```
+***serialize_only*** and  ***serialize_rules*** work the same way as ***to_dict's*** arguments
 
 
 # Detailed example (For more examples see tests):
 
 ```python
 class FlatModel(db.Model, SerializerMixin):
-    __schema_only__ = ('non_sqlalchemy_field', '-id')
-    __schema_extend__ = ()
+    """
+    to_dict() of all instances of this model now returns only following two fields
+    """
+    serialize_only = ('non_sqlalchemy_field', 'id')
+    serialize_rules = ()
 
-    __tablename__ = 'test_flat_model'
     id = db.Column(db.Integer, primary_key=True)
     string = db.Column(db.String(256), default='Some string!')
-    time_at = db.Column(db.DateTime, default=datetime.utcnow())
-    date_at = db.Column(db.Date, default=datetime.utcnow())
+    time = db.Column(db.DateTime, default=datetime.utcnow())
+    date = db.Column(db.Date, default=datetime.utcnow())
     boolean = db.Column(db.Boolean, default=True)
     boolean2 = db.Column(db.Boolean, default=False)
     null = db.Column(db.String)
@@ -86,46 +91,40 @@ class FlatModel(db.Model, SerializerMixin):
 
 
 class ComplexModel(db.Model, SerializerMixin):
-    # schema is not defined so
-    # we will get all SQLALCHEMY attributes of the instance by default
+   """
+   Schema is not defined so
+   we will get all SQLAlchemy attributes of the instance by default
+   """
 
-    __tablename__ = 'test_complex_model'
     id = db.Column(db.Integer, primary_key=True)
     string = db.Column(db.String(256), default='Some string!')
     boolean = db.Column(db.Boolean, default=True)
     null = db.Column(db.String)
-    flat_id = db.Column(db.ForeignKey('test_flat_model.id', ondelete='CASCADE'))
-    rel = db.relationship('FlatModel', lazy='joined', uselist=False)
+    flat_id = db.Column(db.ForeignKey('test_flat_model.id'))
+    rel = db.relationship('FlatModel')
     non_sqlalchemy_list = [dict(a=12, b=10), dict(a=123, b=12)]
 
 instance = ComplexModel.query.first()
 
 
-# Lazy mode =)
+# Now by default the result looks like this:
 
 instance.to_dict()
-
 dict(
     id=1,
     string='Some string!',
     boolean=True,
     null=None,
     flat_id=1,
-    rel=dict(
-        # id is skipped because in defined in __schema__ with '-' simbol
-        string='Some string!',
-        time_at=datetime...,
-        date_at=date...,
-        boolean=True,
-        boolean2=False,
-        null=None,
+    rel=[dict(
+        id=1,
         non_sqlalchemy_dict=dict(qwerty=123)
-)
+    )]
 
 
 # Extend schema
 
-instance.to_dict(extend=('-id', 'rel.id', 'non_sqlalchemy_list'))
+instance.to_dict(rules=('-id', '-rel.id', 'rel.string', 'non_sqlalchemy_list'))
 
 dict(
     string='Some string!',
@@ -134,13 +133,7 @@ dict(
     flat_id=1,
     non_sqlalchemy_list=[dict(a=12, b=10), dict(a=123, b=12)],
     rel=dict(
-        id=1,
         string='Some string!',
-        time_at=datetime...,
-        date_at=date...,
-        boolean=True,
-        boolean2=False,
-        null=None,
         non_sqlalchemy_dict=dict(qwerty=123)
 )
 
@@ -155,10 +148,13 @@ dict(
     non_sqlalchemy_list=[dict(a=12), dict(a=123)],
     rel=dict(
         id=1
-)
+    )
 
 ```
 
 # Troubleshooting
-If you've faced with 'maximum recursion depth exceeded' exception, most likely serializer have found instance of the same class somewhere among model's relationships. You need to exclude it from schema or specify the exact properties to serialize.
+If you've faced with 'maximum recursion depth exceeded' exception,
+most likely serializer have found instance of the same class somewhere among model's relationships.
+You need to exclude it from schema or specify the exact properties to serialize.
+
 
