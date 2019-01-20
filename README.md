@@ -159,7 +159,8 @@ You need to exclude it from schema or specify the exact properties to serialize.
 
 
 
-## To run tests and see tests coverage report just type the following command
+# Tests
+To run tests and see tests coverage report just type the following command
 
 ```
 make test
