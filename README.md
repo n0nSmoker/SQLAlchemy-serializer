@@ -152,6 +152,31 @@ dict(
 
 ```
 
+# Customisation
+If you want to set default behavior for every model you should write
+your own mixin class like above
+
+```
+from sqlalchemy_serializer import SerializerMixin
+
+
+class CustomMixin(SerializerMixin):
+    serialize_only = ()   # Define custom schema here if needed
+    serialize_rules = ()  # Define custom schema here if needed
+
+    date_format = '%Y-%m-%d'  # Define custom format here if needed
+    datetime_format = '%Y-%m-%d %H:%M'  # Define custom format here if needed
+    time_format = '%H:%M'  # Define custom format here if needed
+
+    def get_tzinfo(self):
+        """
+        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        :return: datetime.tzinfo
+        """
+        return None
+
+```
+
 # Troubleshooting
 If you've faced with 'maximum recursion depth exceeded' exception,
 most likely serializer have found instance of the same class somewhere among model's relationships.
