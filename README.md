@@ -156,7 +156,7 @@ dict(
 If you want to set default behavior for every model you should write
 your own mixin class like above
 
-```
+```python
 from sqlalchemy_serializer import SerializerMixin
 
 
