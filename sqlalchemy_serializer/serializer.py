@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+from enum import Enum
 import logging
 import inspect
 
@@ -62,6 +63,9 @@ class Serializer(object):
 
         elif isinstance(value, Iterable):
             return self.serialize_iter(value)
+        
+        elif isinstance(value, Enum):
+            return value.value
 
         elif isinstance(value, SerializerMixin):
             self.schema.merge(
@@ -71,7 +75,7 @@ class Serializer(object):
             return self.serialize_model(value)
 
         else:
-            raise IsNotSerializable('Malformed value')
+            raise IsNotSerializable('Malformed value for {}'.format(value))
 
     @staticmethod
     def is_valid_callable(func):
