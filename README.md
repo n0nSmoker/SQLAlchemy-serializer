@@ -37,10 +37,10 @@ If you want to add a field which is not defined as an SQLAlchemy field:
 class SomeModel(db.Model, SerializerMixin):
     non_sql_field = 123
 
-    def a_method(self):
+    def method(self):
         return anything
 
-result = item.to_dict(rules=('non_sql_field', 'a_method'))
+result = item.to_dict(rules=('non_sql_field', 'method'))
 ```
 Note that method or a function should have no arguments except ***self***,
 in order to let serializer call it without hesitations.
@@ -48,7 +48,7 @@ in order to let serializer call it without hesitations.
 If you want to get exact fields:
 ```python
 
-result = item.to_dict(only=('non_sql_field', 'a_method', 'somefield'))
+result = item.to_dict(only=('non_sql_field', 'method', 'somefield'))
 ```
 Note that if ***somefield*** is an SQLAlchemy instance, you get all it's
 serializable fields.
