@@ -63,7 +63,7 @@ class Serializer(object):
 
         elif isinstance(value, Iterable):
             return self.serialize_iter(value)
-        
+
         elif isinstance(value, Enum):
             return value.value
 
