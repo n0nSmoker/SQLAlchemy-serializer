@@ -90,7 +90,7 @@ So the `result` in this case will be `{'somefield': [{'id': some_id}]}`
 
 
 # Advanced usage 
-For more examples see [tests](https://github.com/n0nSmoker/SQLAlchemy-serializer/tree/master/tests):
+For more examples see [tests](https://github.com/n0nSmoker/SQLAlchemy-serializer/tree/master/tests)
 
 ```python
 class FlatModel(db.Model, SerializerMixin):
