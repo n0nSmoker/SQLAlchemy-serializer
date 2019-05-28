@@ -1,4 +1,6 @@
 .PHONY: test
+FILE = $(file)
 
 test:
-	docker-compose up --build --abort-on-container-exit
+	TEST_FILE=$(FILE) docker-compose up --build --abort-on-container-exit
+

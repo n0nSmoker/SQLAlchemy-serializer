@@ -1,4 +1,6 @@
 from datetime import datetime
+import pytz
+
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -67,3 +69,33 @@ class NestedModel(Base, SerializerMixin):
 
     def _protected_method(self):
         return f'(NESTED)User defined protected method + {self.string}'
+
+
+# Custom serializer
+CUSTOM_TZINFO = pytz.timezone('Asia/Krasnoyarsk')
+CUSTOM_DATE_FORMAT = '%s'  # Unixtimestamp (seconds)
+CUSTOM_DATE_TIME_FORMAT = '%Y %b %d %H:%M:%S.%f'
+CUSTOM_TIME_FORMAT = '%H:%M.%f'
+
+
+class CustomSerializerMixin(SerializerMixin):
+
+    date_format = CUSTOM_DATE_FORMAT
+    datetime_format = CUSTOM_DATE_TIME_FORMAT
+    time_format = CUSTOM_TIME_FORMAT
+
+    def get_tzinfo(self):
+        return CUSTOM_TZINFO
+
+
+class CustomSerializerModel(Base, CustomSerializerMixin):
+    __tablename__ = 'custom_flat_model'
+    serialize_only = ()
+    serialize_rules = ()
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    string = sa.Column(sa.String(256), default='Some string with')
+    date = sa.Column(sa.Date, default=DATETIME)
+    datetime = sa.Column(sa.DateTime, default=DATETIME)
+    time = sa.Column(sa.Time, default=TIME)
+    bool = sa.Column(sa.Boolean, default=True)

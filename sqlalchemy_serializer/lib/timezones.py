@@ -1,8 +1,9 @@
 
+
 def to_local_time(dt, tzinfo=None):
     if not tzinfo:
         return dt
-    normalized = tzinfo.normalize(dt.astimezone(tzinfo))
+    normalized = dt.astimezone(tzinfo)
     return normalized.replace(tzinfo=None)
 
 

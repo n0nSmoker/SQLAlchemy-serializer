@@ -125,9 +125,6 @@ class Serializer(object):
         :param value:
         :return: serialized value
         """
-        tz = self.opts.get('tzinfo')
-        if tz:
-            value = to_local_time(dt=value, tzinfo=tz)
         return format_dt(
             tpl=self.opts.get('date_format'),
             dt=value
@@ -219,6 +216,9 @@ class SerializerMixin(object):
     def get_tzinfo(self):
         """
         Callback to make serializer aware of user's timezone. Should be redefined if needed
+        Example:
+            return pytz.timezone('Asia/Krasnoyarsk')
+
         :return: datetime.tzinfo
         """
         return None
@@ -249,6 +249,6 @@ class SerializerMixin(object):
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
-            tzinfo=tzinfo
+            tzinfo=tzinfo or self.get_tzinfo()
         )
         return s(self, only=only, extend=rules)

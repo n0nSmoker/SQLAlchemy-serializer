@@ -9,7 +9,7 @@ x-environment: &environment
 services:
   tests:
     build: .
-    command: ["pytest", "--pylama", "--cov=sqlalchemy_serializer", "--cov-report", "term-missing"]
+    command: ["pytest", "--pylama", "--cov=sqlalchemy_serializer", "--cov-report", "term-missing", "$TEST_FILE"]
 
     depends_on:
       - db
