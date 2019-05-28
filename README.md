@@ -7,7 +7,7 @@ And be able to customize the output in any possible way, this mixin suits you.
 **Contents**
 - [Installation](#Installation)
 - [Usage](#Usage)
-- [Advanced usage](#Advanced usage)
+- [Advanced usage](#Advanced-usage)
 - [Customization](#Customization)
 - [Troubleshooting](#Troubleshooting)
 - [Tests](#Tests)
