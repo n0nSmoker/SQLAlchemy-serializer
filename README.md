@@ -174,7 +174,7 @@ dict(
 
 # Customization
 If you want to change datetime/date/time formats for all models you should write
-your own mixin class inherited from `SerializerMixin` like in example below.
+your own mixin class inherited from `SerializerMixin` like in example below:
 
 ```python
 from sqlalchemy_serializer import SerializerMixin
