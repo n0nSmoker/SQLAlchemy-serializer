@@ -1,8 +1,9 @@
 # SQLAlchemy-serializer
 Mixin for SQLAlchemy models serialization without pain.
 
-If you want to serialize SQLAlchemy model instances like this `item.to_dict()`
-And be able to customize the output in any possible way, this mixin suits you.
+If you want to serialize SQLAlchemy model instances with only one line of code,
+and tools like `marshmallow` seems to be redundant and too complex for such a simple task,
+this mixin definitely suits you.
 
 **Contents**
 - [Installation](#Installation)
@@ -174,25 +175,24 @@ dict(
 ```
 
 # Customization
-If you want to change datetime/date/time formats for all models you should write
+If you want to change datetime/date/time/decimal formats for all models you should write
 your own mixin class inherited from `SerializerMixin` like in example below:
 
 ```python
 from sqlalchemy_serializer import SerializerMixin
 
-CUSTOM_DATE_FORMAT = '%s'  # Unixtimestamp (seconds)
-CUSTOM_DATE_TIME_FORMAT = '%Y %b %d %H:%M:%S.%f'
-CUSTOM_TIME_FORMAT = '%H:%M.%f'
-
 class CustomSerializerMixin(SerializerMixin):
-    date_format = CUSTOM_DATE_FORMAT
-    datetime_format = CUSTOM_DATE_TIME_FORMAT
-    time_format = CUSTOM_TIME_FORMAT
+    date_format = '%s'  # Unixtimestamp (seconds)
+    datetime_format = '%Y %b %d %H:%M:%S.%f'
+    time_format = '%H:%M.%f'
+    decimal_format = '{:0>10.3}'
 ```
 And later use it as usual:
 ```python
+from decimal import Decimal
 import sqlalchemy as sa
 from some.lib.package import CustomSerializerMixin
+
 
 class CustomSerializerModel(db.Model, CustomSerializerMixin):
     __tablename__ = 'custom_table_name'
@@ -203,10 +203,14 @@ class CustomSerializerModel(db.Model, CustomSerializerMixin):
     date = sa.Column(sa.Date)
     datetime = sa.Column(sa.DateTime)
     time = sa.Column(sa.Time)
+    money = Decimal('12.123')  # the same result with sa.Float(asdecimal=True, ...)
 
 ```
-All `date/time/datetime` fields be serialized using your custom formats 
-To get **unixtimestamp** use `%s` format, others you can find [here](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
+All `date/time/datetime/decimal` fields will be serialized using your custom formats.
+
+- Decimal uses python `format` syntax
+- To get **unixtimestamp** use `%s`, 
+- Other `datetime` formats you can find [in docs](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
 
 # Timezones
 To keep `datetimes` consistent its better to store it in the database normalized to **UTC**.
