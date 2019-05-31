@@ -1,4 +1,6 @@
 from datetime import datetime
+from decimal import Decimal
+
 import pytz
 
 import sqlalchemy as sa
@@ -10,6 +12,8 @@ from sqlalchemy_serializer import SerializerMixin
 DATETIME = datetime(year=2018, month=1, day=1, hour=1, minute=1, second=1, microsecond=123)
 DATE = DATETIME.date()
 TIME = DATETIME.time()
+
+MONEY = Decimal('12.123')
 
 Base = declarative_base()
 
@@ -29,6 +33,7 @@ class FlatModel(Base, SerializerMixin):
     list = [1, 'test_string', .9, {'key': 123, 'key2': 23423}, {'key': 234}]
     set = {1, 2, 'test_string'}
     dict = dict(key=123, key2={'key': 12})
+    money = MONEY
 
     @property
     def prop(self):
@@ -76,6 +81,7 @@ CUSTOM_TZINFO = pytz.timezone('Asia/Krasnoyarsk')
 CUSTOM_DATE_FORMAT = '%s'  # Unixtimestamp (seconds)
 CUSTOM_DATE_TIME_FORMAT = '%Y %b %d %H:%M:%S.%f'
 CUSTOM_TIME_FORMAT = '%H:%M.%f'
+CUSTOM_DECIMAL_FORMAT = '{:0>10.3}'
 
 
 class CustomSerializerMixin(SerializerMixin):
@@ -83,6 +89,7 @@ class CustomSerializerMixin(SerializerMixin):
     date_format = CUSTOM_DATE_FORMAT
     datetime_format = CUSTOM_DATE_TIME_FORMAT
     time_format = CUSTOM_TIME_FORMAT
+    decimal_format = CUSTOM_DECIMAL_FORMAT
 
     def get_tzinfo(self):
         return CUSTOM_TZINFO
@@ -91,7 +98,7 @@ class CustomSerializerMixin(SerializerMixin):
 class CustomSerializerModel(Base, CustomSerializerMixin):
     __tablename__ = 'custom_flat_model'
     serialize_only = ()
-    serialize_rules = ()
+    serialize_rules = ('money',)  # include non SQL decimal field to test format
 
     id = sa.Column(sa.Integer, primary_key=True)
     string = sa.Column(sa.String(256), default='Some string with')
@@ -99,3 +106,4 @@ class CustomSerializerModel(Base, CustomSerializerMixin):
     datetime = sa.Column(sa.DateTime, default=DATETIME)
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
+    money = MONEY

@@ -1,5 +1,6 @@
-from .models import (CustomSerializerModel, DATETIME, TIME, DATE,
-                     CUSTOM_TZINFO, CUSTOM_DATE_FORMAT, CUSTOM_TIME_FORMAT, CUSTOM_DATE_TIME_FORMAT)
+from .models import (CustomSerializerModel, DATETIME, TIME, DATE, MONEY,
+                     CUSTOM_TZINFO,
+                     CUSTOM_DATE_FORMAT, CUSTOM_TIME_FORMAT, CUSTOM_DATE_TIME_FORMAT, CUSTOM_DECIMAL_FORMAT)
 
 
 def test_tzinfo_set_in_serializer(get_instance):
@@ -17,6 +18,9 @@ def test_tzinfo_set_in_serializer(get_instance):
     assert 'datetime' in data
     assert 'time' in data
     assert data['time'] == TIME.strftime(CUSTOM_TIME_FORMAT)
+
+    assert 'money' in data
+    assert data['money'] == CUSTOM_DECIMAL_FORMAT.format(MONEY)
 
     # Timezone info affects only datetime objects
     assert data['datetime'] == DATETIME.astimezone(CUSTOM_TZINFO).strftime(CUSTOM_DATE_TIME_FORMAT)

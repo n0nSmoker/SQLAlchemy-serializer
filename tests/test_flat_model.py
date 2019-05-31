@@ -1,4 +1,4 @@
-from .models import FlatModel, DATETIME, TIME, DATE
+from .models import FlatModel, DATETIME, TIME, DATE, MONEY
 
 
 def test_no_defaults_no_rules(get_instance):
@@ -29,11 +29,12 @@ def test_no_defaults_no_rules(get_instance):
     assert 'prop' not in data
     assert 'method' not in data
     assert '_protected_method' not in data
+    assert 'money' not in data
 
 
-def test_datetime_default_formats(get_instance):
+def test_default_formats(get_instance):
     """
-    Check date/datetime/time default formats in resulting JSON of flat model with no predefined options
+    Check date/datetime/time/decimal default formats in resulting JSON of flat model with no predefined options
     :param get_instance:
     :return:
     """
@@ -43,8 +44,9 @@ def test_datetime_default_formats(get_instance):
     d_format = i.date_format
     dt_format = i.datetime_format
     t_format = i.time_format
+    decimal_format = i.decimal_format
 
-    data = i.to_dict()
+    data = i.to_dict(rules=('money',))  # Include non-SQL field to check decimal_format
 
     assert 'date' in data
     assert data['date'] == DATE.strftime(d_format)
@@ -53,16 +55,20 @@ def test_datetime_default_formats(get_instance):
     assert 'time' in data
     assert data['time'] == TIME.strftime(t_format)
 
+    assert 'money' in data
+    assert data['money'] == decimal_format.format(MONEY)
 
-def test_datetime_formats_got_in_runtime(get_instance):
+
+def test_formats_got_in_runtime(get_instance):
     """
-    Check date/datetime/time default formats in resulting JSON of flat model got as the parameters of to_dict func
+    Check date/datetime/time/decimal default formats in resulting JSON passed as the parameters of to_dict func
     :param get_instance:
     :return:
     """
     d_format = '%Y/%m/%d'
     dt_format = '%Y/%m/%d %H:%M'
     t_format = '>%H<'
+    decimal_format = '{:.3}'
 
     i = get_instance(FlatModel)
 
@@ -70,11 +76,14 @@ def test_datetime_formats_got_in_runtime(get_instance):
     assert d_format != i.date_format
     assert dt_format != i.datetime_format
     assert t_format != i.time_format
+    assert decimal_format != i.decimal_format
 
     data = i.to_dict(
         date_format=d_format,
         datetime_format=dt_format,
         time_format=t_format,
+        decimal_format=decimal_format,
+        rules=('money',)  # Include non-SQL field to check decimal_format
     )
 
     # Check serialized formats
@@ -84,6 +93,8 @@ def test_datetime_formats_got_in_runtime(get_instance):
     assert data['datetime'] == DATETIME.strftime(dt_format)
     assert 'time' in data
     assert data['time'] == TIME.strftime(t_format)
+    assert 'money' in data
+    assert data['money'] == decimal_format.format(MONEY)
 
     # Check if we got ISO date/time if there is no format at all
     i = get_instance(FlatModel)

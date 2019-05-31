@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+from decimal import Decimal
 from enum import Enum
 import logging
 import inspect
@@ -46,36 +47,21 @@ class Serializer(object):
         if self.is_valid_callable(value):
             value = value()
 
-        if isinstance(value, self.simple_types):
-            return value
-
-        elif isinstance(value, time):  # Should be always before datetime
-            return self.serialize_time(value)
-
-        elif isinstance(value, datetime):
-            return self.serialize_datetime(value)
-
-        elif isinstance(value, date):
-            return self.serialize_date(value)
-
-        elif isinstance(value, dict):
-            return self.serialize_dict(value)
-
-        elif isinstance(value, Iterable):
-            return self.serialize_iter(value)
-
-        elif isinstance(value, Enum):
-            return value.value
-
-        elif isinstance(value, SerializerMixin):
-            self.schema.merge(
-                only=value.serialize_only if self.schema.is_greedy else (),
-                extend=value.serialize_rules if self.schema.is_greedy else ()
-            )
-            return self.serialize_model(value)
-
-        else:
-            raise IsNotSerializable('Malformed value for {}'.format(value))
+        serialize_types = (
+            (self.simple_types, lambda x: x),  # Should be checked before any other type
+            (time, self.serialize_time),  # Should be checked before datetime
+            (datetime, self.serialize_datetime),
+            (date, self.serialize_date),
+            (Decimal, self.serialize_decimal),
+            (dict, self.serialize_dict),  # Should be checked before Iterable
+            (Iterable, self.serialize_iter),
+            (Enum, lambda x: value.value),
+            (SerializerMixin, self.serialize_model),
+        )
+        for types, callback in serialize_types:
+            if isinstance(value, types):
+                return callback(value)
+        raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
 
     @staticmethod
     def is_valid_callable(func):
@@ -141,6 +127,15 @@ class Serializer(object):
             dt=value
         )
 
+    def serialize_decimal(self, value):
+        """
+        decimal serialization logic
+        :param value:
+        :return: serialized value
+        """
+        f = self.opts.get('decimal_format')
+        return f.format(value)
+
     def serialize_iter(self, value):
         """
         Serialization logic for any iterable object
@@ -177,6 +172,11 @@ class Serializer(object):
         :param value:
         :return: dict
         """
+        self.schema.merge(
+            only=value.serialize_only if self.schema.is_greedy else (),
+            extend=value.serialize_rules if self.schema.is_greedy else ()
+        )
+
         res = {}
         # Check not negative keys from schema
         keys = self.schema.get_heads()
@@ -212,6 +212,7 @@ class SerializerMixin(object):
     date_format = '%Y-%m-%d'
     datetime_format = '%Y-%m-%d %H:%M'
     time_format = '%H:%M'
+    decimal_format = '{}'
 
     def get_tzinfo(self):
         """
@@ -230,7 +231,9 @@ class SerializerMixin(object):
         """
         return {a.key for a in sql_inspect(self).mapper.attrs}
 
-    def to_dict(self, only=(), rules=(), date_format=None, datetime_format=None, time_format=None, tzinfo=None):
+    def to_dict(self, only=(), rules=(),
+                date_format=None, datetime_format=None, time_format=None, tzinfo=None,
+                decimal_format=None):
         """
         Returns SQLAlchemy model's data in JSON compatible format
 
@@ -242,6 +245,7 @@ class SerializerMixin(object):
         :param date_format: str
         :param datetime_format: str
         :param time_format: str
+        :param decimal_format: str
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
@@ -249,6 +253,7 @@ class SerializerMixin(object):
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
+            decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo()
         )
         return s(self, only=only, extend=rules)
