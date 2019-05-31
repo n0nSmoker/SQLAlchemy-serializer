@@ -9,6 +9,7 @@ And be able to customize the output in any possible way, this mixin suits you.
 - [Usage](#Usage)
 - [Advanced usage](#Advanced-usage)
 - [Customization](#Customization)
+- [Timezones](#Timezones)
 - [Troubleshooting](#Troubleshooting)
 - [Tests](#Tests)
 
