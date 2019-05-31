@@ -9,6 +9,7 @@ And be able to customize the output in any possible way, this mixin suits you.
 - [Usage](#Usage)
 - [Advanced usage](#Advanced-usage)
 - [Customization](#Customization)
+- [Timezones](#Timezones)
 - [Troubleshooting](#Troubleshooting)
 - [Tests](#Tests)
 
@@ -241,7 +242,7 @@ You need to exclude it from schema or specify the exact properties to serialize.
 
 
 # Tests
-To run tests and see tests coverage report just type the following command
+To run tests and see tests coverage report just type the following command:(doker and doker-compose should be installed on you local machine)
 ```bash
 make test
 ```
