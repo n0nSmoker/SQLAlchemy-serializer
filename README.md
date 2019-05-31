@@ -241,7 +241,7 @@ You need to exclude it from schema or specify the exact properties to serialize.
 
 
 # Tests
-To run tests and see tests coverage report just type the following command
+To run tests and see tests coverage report just type the following command:(doker and doker-compose should be installed on you local machine)
 ```bash
 make test
 ```
