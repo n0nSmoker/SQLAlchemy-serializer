@@ -8,5 +8,5 @@ logging.basicConfig(
 
 
 logger = logging.getLogger('serializer')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARN)
 

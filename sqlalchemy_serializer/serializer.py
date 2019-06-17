@@ -15,7 +15,69 @@ from .lib.rules import Schema
 
 
 logger = logging.getLogger('serializer')
-logger.setLevel(logging.WARN)
+
+
+class SerializerMixin(object):
+    """
+    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain
+    Can be inherited to redefine get_tzinfo callback, datetime formats or to add some extra serialization logic
+    """
+
+    # Default exclusive schema.
+    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
+    serialize_only = ()
+
+    # Additions to default schema. Can include negative rules
+    serialize_rules = ()
+
+    date_format = '%Y-%m-%d'
+    datetime_format = '%Y-%m-%d %H:%M'
+    time_format = '%H:%M'
+    decimal_format = '{}'
+
+    def get_tzinfo(self):
+        """
+        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        Example:
+            return pytz.timezone('Asia/Krasnoyarsk')
+
+        :return: datetime.tzinfo
+        """
+        return None
+
+    @property
+    def serializable_keys(self):
+        """
+        :return: set of keys available for serialization
+        """
+        return {a.key for a in sql_inspect(self).mapper.attrs}
+
+    def to_dict(self, only=(), rules=(),
+                date_format=None, datetime_format=None, time_format=None, tzinfo=None,
+                decimal_format=None):
+        """
+        Returns SQLAlchemy model's data in JSON compatible format
+
+        For details about datetime formats follow:
+        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
+        :param only: exclusive schema to replace default one (always have higher priority than rules)
+        :param rules: schema to extend default one or schema defined in "only"
+        :param date_format: str
+        :param datetime_format: str
+        :param time_format: str
+        :param decimal_format: str
+        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :return: data: dict
+        """
+        s = Serializer(
+            date_format=date_format or self.date_format,
+            datetime_format=datetime_format or self.datetime_format,
+            time_format=time_format or self.time_format,
+            decimal_format=decimal_format or self.decimal_format,
+            tzinfo=tzinfo or self.get_tzinfo()
+        )
+        return s(self, only=only, extend=rules)
 
 
 class Serializer(object):
@@ -23,6 +85,7 @@ class Serializer(object):
     All serialization logic is implemented here
     """
     simple_types = (int, str, float, bytes, bool, type(None))  # Types that do nod need any serialization logic
+    complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
         """
@@ -44,24 +107,7 @@ class Serializer(object):
         self.schema = Schema(only=only, extend=extend)
 
         logger.info(f'Call serializer for type:{get_type(value)}')
-        if self.is_valid_callable(value):
-            value = value()
-
-        serialize_types = (
-            (self.simple_types, lambda x: x),  # Should be checked before any other type
-            (time, self.serialize_time),  # Should be checked before datetime
-            (datetime, self.serialize_datetime),
-            (date, self.serialize_date),
-            (Decimal, self.serialize_decimal),
-            (dict, self.serialize_dict),  # Should be checked before Iterable
-            (Iterable, self.serialize_iter),
-            (Enum, lambda x: value.value),
-            (SerializerMixin, self.serialize_model),
-        )
-        for types, callback in serialize_types:
-            if isinstance(value, types):
-                return callback(value)
-        raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
+        return self.serialize(value)
 
     @staticmethod
     def is_valid_callable(func):
@@ -84,12 +130,33 @@ class Serializer(object):
         :param key:
         :return: serialized value
         """
-        if isinstance(value, self.simple_types):
-            return value
+        if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
+            return self.serialize(value)
+
         serializer = Serializer(**self.opts)
         kwargs = self.schema.fork(key=key)
         logger.info(f'Fork serializer for type:{get_type(value)} with kwargs:{kwargs}')
         return serializer(value, **kwargs)
+
+    def serialize(self, value):
+        if self.is_valid_callable(value):
+            value = value()
+
+        serialize_types = (
+            (self.simple_types, lambda x: x),  # Should be checked before any other type
+            (time, self.serialize_time),  # Should be checked before datetime
+            (datetime, self.serialize_datetime),
+            (date, self.serialize_date),
+            (Decimal, self.serialize_decimal),
+            (dict, self.serialize_dict),  # Should be checked before Iterable
+            (Iterable, self.serialize_iter),
+            (Enum, lambda x: value.value),
+            (SerializerMixin, self.serialize_model),
+        )
+        for types, callback in serialize_types:
+            if isinstance(value, types):
+                return callback(value)
+        raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
 
     def serialize_datetime(self, value):
         """
@@ -194,66 +261,3 @@ class Serializer(object):
 
 class IsNotSerializable(Exception):
     pass
-
-
-class SerializerMixin(object):
-    """
-    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain
-    Can be inherited to redefine get_tzinfo callback, datetime formats or to add some extra serialization logic
-    """
-
-    # Default exclusive schema.
-    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
-    serialize_only = ()
-
-    # Additions to default schema. Can include negative rules
-    serialize_rules = ()
-
-    date_format = '%Y-%m-%d'
-    datetime_format = '%Y-%m-%d %H:%M'
-    time_format = '%H:%M'
-    decimal_format = '{}'
-
-    def get_tzinfo(self):
-        """
-        Callback to make serializer aware of user's timezone. Should be redefined if needed
-        Example:
-            return pytz.timezone('Asia/Krasnoyarsk')
-
-        :return: datetime.tzinfo
-        """
-        return None
-
-    @property
-    def serializable_keys(self):
-        """
-        :return: set of keys available for serialization
-        """
-        return {a.key for a in sql_inspect(self).mapper.attrs}
-
-    def to_dict(self, only=(), rules=(),
-                date_format=None, datetime_format=None, time_format=None, tzinfo=None,
-                decimal_format=None):
-        """
-        Returns SQLAlchemy model's data in JSON compatible format
-
-        For details about datetime formats follow:
-        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
-
-        :param only: exclusive schema to replace default one (always have higher priority than rules)
-        :param rules: schema to extend default one or schema defined in "only"
-        :param date_format: str
-        :param datetime_format: str
-        :param time_format: str
-        :param decimal_format: str
-        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
-        :return: data: dict
-        """
-        s = Serializer(
-            date_format=date_format or self.date_format,
-            datetime_format=datetime_format or self.datetime_format,
-            time_format=time_format or self.time_format,
-            decimal_format=decimal_format or self.decimal_format,
-            tzinfo=tzinfo or self.get_tzinfo()
-        )
-        return s(self, only=only, extend=rules)
