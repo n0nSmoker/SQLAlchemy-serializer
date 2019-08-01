@@ -35,6 +35,9 @@ class SerializerMixin(object):
     time_format = '%H:%M'
     decimal_format = '{}'
 
+    # Class of serializer. `Serializer` used by default (if None).
+    serializer_class = None
+
     def get_tzinfo(self):
         """
         Callback to make serializer aware of user's timezone. Should be redefined if needed
@@ -54,7 +57,7 @@ class SerializerMixin(object):
 
     def to_dict(self, only=(), rules=(),
                 date_format=None, datetime_format=None, time_format=None, tzinfo=None,
-                decimal_format=None):
+                decimal_format=None, serializer_class=None):
         """
         Returns SQLAlchemy model's data in JSON compatible format
 
@@ -68,9 +71,10 @@ class SerializerMixin(object):
         :param time_format: str
         :param decimal_format: str
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :param serializer_class: type
         :return: data: dict
         """
-        s = Serializer(
+        s = (serializer_class or self.serializer_class or Serializer)(
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
@@ -133,7 +137,7 @@ class Serializer(object):
         if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
             return self.serialize(value)
 
-        serializer = Serializer(**self.opts)
+        serializer = type(self)(**self.opts)
         kwargs = self.schema.fork(key=key)
         logger.info(f'Fork serializer for type:{get_type(value)} with kwargs:{kwargs}')
         return serializer(value, **kwargs)
