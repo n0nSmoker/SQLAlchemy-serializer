@@ -244,8 +244,8 @@ By default the library can serialize the following types:
  - date
  - Decimal
  - Enum
- - dict (if values and keys are one of types mentioned above)
- - any Iterable (if types of values are mentioned above)
+ - dict (if values and keys are one of types mentioned above, or inherit one of them)
+ - any Iterable (if types of values are mentioned above, or inherit one of them)
  ```
  If you want to add serialization of any other type or redefine the default behaviour. 
  You should add something like this:
