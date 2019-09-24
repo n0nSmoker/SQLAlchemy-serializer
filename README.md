@@ -9,7 +9,8 @@ this mixin definitely suits you.
 - [Installation](#Installation)
 - [Usage](#Usage)
 - [Advanced usage](#Advanced-usage)
-- [Customization](#Customization)
+- [Custom formats](#Custom-formats)
+- [Custom types](#Custom-types)
 - [Timezones](#Timezones)
 - [Troubleshooting](#Troubleshooting)
 - [Tests](#Tests)
@@ -174,10 +175,28 @@ dict(
 )
 ```
 
-# Customization
-If you want to change datetime/date/time/decimal formats for all models you should write
-your own mixin class inherited from `SerializerMixin` like in example below:
+# Custom formats
+If you want to change datetime/date/time/decimal format in one model you can specify it like below:
+```python
+from sqlalchemy_serializer import SerializerMixin
 
+class SomeModel(db.Model, SerializerMixin):
+    __tablename__ = 'custom_table_name'
+    
+    date_format = '%s'  # Unixtimestamp (seconds)
+    datetime_format = '%Y %b %d %H:%M:%S.%f'
+    time_format = '%H:%M.%f'
+    decimal_format = '{:0>10.3}'
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    date = sa.Column(sa.Date)
+    datetime = sa.Column(sa.DateTime)
+    time = sa.Column(sa.Time)
+    money = Decimal('12.123')  # same result with sa.Float(asdecimal=True, ...)
+```
+
+If you want to change format in every model, you should write
+your own mixin class inherited from `SerializerMixin`:
 ```python
 from sqlalchemy_serializer import SerializerMixin
 
@@ -196,14 +215,12 @@ from some.lib.package import CustomSerializerMixin
 
 class CustomSerializerModel(db.Model, CustomSerializerMixin):
     __tablename__ = 'custom_table_name'
-    serialize_only = ()
-    serialize_rules = ()
 
     id = sa.Column(sa.Integer, primary_key=True)
     date = sa.Column(sa.Date)
     datetime = sa.Column(sa.DateTime)
     time = sa.Column(sa.Time)
-    money = Decimal('12.123')  # the same result with sa.Float(asdecimal=True, ...)
+    money = Decimal('12.123')  # same result with sa.Float(asdecimal=True, ...)
 
 ```
 All `date/time/datetime/decimal` fields will be serialized using your custom formats.
@@ -211,6 +228,69 @@ All `date/time/datetime/decimal` fields will be serialized using your custom for
 - Decimal uses python `format` syntax
 - To get **unixtimestamp** use `%s`, 
 - Other `datetime` formats you can find [in docs](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
+
+
+# Custom types
+By default the library can serialize the following types:
+ ```
+ - int 
+ - str 
+ - float 
+ - bytes 
+ - bool 
+ - type(None)
+ - time
+ - datetime
+ - date
+ - Decimal
+ - Enum
+ - dict (if values and keys are one of types mentioned above)
+ - any Iterable (if types of values are mentioned above)
+ ```
+ If you want to add serialization of any other type or redefine the default behaviour. 
+ You should add something like this:
+
+```python
+
+serialize_types = (
+    (SomeType, lambda x: some_expression),
+    (AnyOtherType, some_function)
+)
+```
+To your own mixin class inherited from `SerializerMixin`:
+
+```python
+from sqlalchemy_serializer import SerializerMixin
+from geoalchemy2.elements import WKBElement
+from geoalchemy2.shape import to_shape
+
+def serialize_int(value):
+    return value + 100
+
+class CustomSerializerMixin(SerializerMixin):
+    serialize_types = (
+        (WKBElement, lambda x: to_shape(x).to_wkt()),
+        (int, serialize_int)
+    )
+```
+... or directly to the model:
+```python
+from geoalchemy2 import Geometry
+from sqlalchemy_serializer import SerializerMixin
+
+class Point(Base, SerializerMixin):
+    serialize_types = (
+        (WKBElement, lambda x: to_shape(x).to_wkt()),
+        (AnyOtherType, serialize_smth)
+    )
+    __tablename__ = 'point'
+    id = Column(Integer, primary_key=True)
+    position = Column(Geometry('POINT'))
+```
+
+Unfortunately you can not access formats or tzinfo in that functions.
+I'll implement this logic later if any of users needs it.
+
 
 # Timezones
 To keep `datetimes` consistent its better to store it in the database normalized to **UTC**.
@@ -244,6 +324,13 @@ If you've faced with **maximum recursion depth exceeded** exception,
 most likely serializer have found instance of the same class somewhere among model's relationships.
 You need to exclude it from schema or specify the exact properties to serialize.
 
+And do not forget to add **comma** at the end of one element tuples, it is trivial, 
+but lots of developers forget about it:
+```python
+serialize_only = ('some_field',)  # <--- Thats right!
+serialize_only = ('some_field')  # <--- WRONG it is actually not a tuple
+
+```
 
 # Tests
 To run tests and see tests coverage report just type the following command:(doker and doker-compose should be installed on you local machine)

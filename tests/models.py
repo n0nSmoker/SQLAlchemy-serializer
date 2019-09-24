@@ -82,14 +82,18 @@ CUSTOM_DATE_FORMAT = '%s'  # Unixtimestamp (seconds)
 CUSTOM_DATE_TIME_FORMAT = '%Y %b %d %H:%M:%S.%f'
 CUSTOM_TIME_FORMAT = '%H:%M.%f'
 CUSTOM_DECIMAL_FORMAT = '{:0>10.3}'
+CUSTOM_STR_VALUE = 'Test custom type serializer'
 
 
 class CustomSerializerMixin(SerializerMixin):
-
     date_format = CUSTOM_DATE_FORMAT
     datetime_format = CUSTOM_DATE_TIME_FORMAT
     time_format = CUSTOM_TIME_FORMAT
     decimal_format = CUSTOM_DECIMAL_FORMAT
+
+    serialize_types = (
+        (str, lambda x: CUSTOM_STR_VALUE),
+    )
 
     def get_tzinfo(self):
         return CUSTOM_TZINFO
@@ -107,3 +111,4 @@ class CustomSerializerModel(Base, CustomSerializerMixin):
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
     money = MONEY
+

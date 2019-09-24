@@ -30,6 +30,9 @@ class SerializerMixin(object):
     # Additions to default schema. Can include negative rules
     serialize_rules = ()
 
+    # Extra serialising functions
+    serialize_types = ()
+
     date_format = '%Y-%m-%d'
     datetime_format = '%Y-%m-%d %H:%M'
     time_format = '%H:%M'
@@ -54,7 +57,7 @@ class SerializerMixin(object):
 
     def to_dict(self, only=(), rules=(),
                 date_format=None, datetime_format=None, time_format=None, tzinfo=None,
-                decimal_format=None):
+                decimal_format=None, serialize_types=None):
         """
         Returns SQLAlchemy model's data in JSON compatible format
 
@@ -75,7 +78,8 @@ class SerializerMixin(object):
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
             decimal_format=decimal_format or self.decimal_format,
-            tzinfo=tzinfo or self.get_tzinfo()
+            tzinfo=tzinfo or self.get_tzinfo(),
+            serialize_types=serialize_types or self.serialize_types
         )
         return s(self, only=only, extend=rules)
 
@@ -88,11 +92,6 @@ class Serializer(object):
     complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
-        """
-        :date_format: str Babel-format
-        :datetime_format: str Babel-format
-        :tzinfo: datetime.tzinfo
-        """
         self.opts = kwargs
         self.schema = None
 
@@ -142,7 +141,9 @@ class Serializer(object):
         if self.is_valid_callable(value):
             value = value()
 
+        extra_serialization_types = self.opts.get('serialize_types', ())
         serialize_types = (
+            *extra_serialization_types,
             (self.simple_types, lambda x: x),  # Should be checked before any other type
             (time, self.serialize_time),  # Should be checked before datetime
             (datetime, self.serialize_datetime),
