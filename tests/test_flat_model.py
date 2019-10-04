@@ -46,7 +46,8 @@ def test_default_formats(get_instance):
     t_format = i.time_format
     decimal_format = i.decimal_format
 
-    data = i.to_dict(rules=('money',))  # Include non-SQL field to check decimal_format
+    # Include non-SQL field to check decimal_format and bytes
+    data = i.to_dict(rules=('money', 'prop_with_bytes'))
 
     assert 'date' in data
     assert data['date'] == DATE.strftime(d_format)
@@ -57,6 +58,9 @@ def test_default_formats(get_instance):
 
     assert 'money' in data
     assert data['money'] == decimal_format.format(MONEY)
+
+    assert 'prop_with_bytes' in data
+    assert data['prop_with_bytes'] == i.prop_with_bytes.decode()
 
 
 def test_formats_got_in_runtime(get_instance):

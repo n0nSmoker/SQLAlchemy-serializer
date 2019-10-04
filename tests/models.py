@@ -39,6 +39,10 @@ class FlatModel(Base, SerializerMixin):
     def prop(self):
         return 'Some property'
 
+    @property
+    def prop_with_bytes(self):
+        return b'Some bytes'
+
     def method(self):
         return f'User defined method + {self.string}'
 

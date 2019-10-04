@@ -88,7 +88,7 @@ class Serializer(object):
     """
     All serialization logic is implemented here
     """
-    simple_types = (int, str, float, bytes, bool, type(None))  # Types that do nod need any serialization logic
+    simple_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
     complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
@@ -145,6 +145,7 @@ class Serializer(object):
         serialize_types = (
             *extra_serialization_types,
             (self.simple_types, lambda x: x),  # Should be checked before any other type
+            (bytes, lambda x: x.decode()),
             (time, self.serialize_time),  # Should be checked before datetime
             (datetime, self.serialize_datetime),
             (date, self.serialize_date),
