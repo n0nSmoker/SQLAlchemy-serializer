@@ -68,14 +68,12 @@ class Schema(object):
         for rule in rules:
             head, tail = rule.divide()
 
-            # Look for opposite rules
+            # Look for opposite rules and if so ignore the rule
             if head.to_opposite() in self.tree:
                 if not tail:
                     if not self.tree[head.to_opposite()]:
-                        # ignore rule because there's already an opposite one
                         continue
                 elif tail.to_opposite() in self.tree[head.to_opposite()]:
-                    # ignore rule because there's already an opposite one
                     continue
 
             if head in self.tree:
