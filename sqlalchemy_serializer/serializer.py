@@ -241,10 +241,11 @@ class Serializer(object):
         :param value:
         :return: dict
         """
-        self.schema.merge(
-            only=value.serialize_only if self.schema.is_greedy else (),
-            extend=value.serialize_rules if self.schema.is_greedy else ()
-        )
+        if self.schema.is_greedy:
+            self.schema.merge(
+                only=value.serialize_only,
+                extend=value.serialize_rules
+            )
 
         res = {}
         # Check not negative keys from schema
