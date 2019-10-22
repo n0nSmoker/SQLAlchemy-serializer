@@ -76,6 +76,9 @@ serializable fields. So if you want to get only some of them, you should define 
 
 result = item.to_dict(only=('non_sql_field', 'method', 'somefield.id', 'somefield.etc'))
 ```
+You can use negative rules in `only` param too.
+So `item.to_dict(only=('somefield', -'somefield.id'))`
+will return `somefiled` without `id`. See [Negative rules in ONLY section](#Negative-rules-in-ONLY-section)
 
 If you want to define schema for all instances of particular SQLAlchemy model,
 add serialize properties to model definition:
@@ -320,12 +323,45 @@ class CustomSerializerMixin(SerializerMixin):
 ```
 
 # Troubleshooting
-If you've faced with **maximum recursion depth exceeded** exception,
-most likely serializer have found instance of the same class somewhere among model's relationships.
-You need to exclude it from schema or specify the exact properties to serialize.
 
-And do not forget to add **comma** at the end of one element tuples, it is trivial, 
-but lots of developers forget about it:
+## Max recursion
+If you've faced with **maximum recursion depth exceeded** exception,
+most likely the serializer have found instance of the same class somewhere among model's relationships.
+Especially if you use backrefs. In this case you need to tell it where to stop like below:
+```python
+class User(Base, SerializerMixin):
+    __tablename__ = 'users'
+    
+    # Exclude nested model of the same class to avoid max recursion error
+    serialize_rules = ('-related_models.user',)
+    ...
+    related_models = relationship("RelatedModel", backref='user')
+    
+    
+class RelatedModel(Base, SerializerMixin):
+    __tablename__ = 'some_table'
+
+    ...
+    user_id = Column(Integer, ForeignKey('users.id'))
+    ...
+```
+If for some reason you need the field `user` to be presented in `related_models` field.
+You can change `serialize_rules` to `('-related_models.user.related_models',)`
+To break the chain of serialisation a bit further.
+
+## Controversial rules
+If you add controversial rules like `serialize_rules = ('-prop', 'prop.id')`
+The serializer will exclude the whole `prop`. You need to revert these rules
+or use `serialize_only` option. You can also combine `serialize_only` and `serialize_only`.
+
+## Negative rules in ONLY section
+If you pass rules in `serialize_only` the serializer becomes **NOT** greedy and returns **ONLY** fields listed there.
+So `serialize_only = ('-model.id',)` will return nothing
+But `serialize_only = ('model', '-model.id',)` will return `model` field without `id`
+
+## One element tuples
+Do not forget to add **comma** at the end of one element tuples, it is trivial, 
+but a lot of developers forget about it:
 ```python
 serialize_only = ('some_field',)  # <--- Thats right!
 serialize_only = ('some_field')  # <--- WRONG it is actually not a tuple

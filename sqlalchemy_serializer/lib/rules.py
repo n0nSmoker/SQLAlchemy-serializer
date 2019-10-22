@@ -22,8 +22,8 @@ class Schema(object):
         extend = set(extend)
         self.tree = {}
 
-        # Take only positive rules from ONLY param
-        rules = {Rule(text=r) for r in only if not Rule(text=r).is_negative}
+        # Rules from ONLY param
+        rules = {Rule(text=r) for r in only}
 
         # Set is_greedy if there were non negative rules in ONLY param
         self.is_greedy = not bool(rules)
@@ -50,7 +50,7 @@ class Schema(object):
         :return: bool
         """
         rule = self.tree.get(Rule.to_negative(key))
-        if rule is not None and not rule:
+        if rule is not None and not rule:  # Negative rule got no ancestors
             return False
         return key in self.tree or self.is_greedy
 

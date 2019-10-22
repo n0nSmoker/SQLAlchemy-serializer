@@ -341,3 +341,42 @@ def test_rules_for_nested_dicts_and_lists(get_instance):
 
     assert 'prop' in nested
     assert nested['prop'] == i.model.prop
+
+
+def test_controversial_rules(get_instance):
+    i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
+    i.serialize_rules = ('-model', 'model.id')
+    data = i.to_dict()
+
+    # Negative rules have higher priority
+    assert 'model' not in data
+
+    i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
+    i.serialize_rules = ('-model.id',)
+    i.serialize_only = ('model', 'model.string')
+    data = i.to_dict()
+
+    assert 'model' in data
+    nested = data['model']
+
+    # Rules from ONLY section always have higher priority
+    assert 'id' not in nested
+    assert 'string' in nested
+
+    # Negative rules in ONLY section
+    # Nice way
+    i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
+    i.serialize_only = ('model', '-model.string')
+    data = i.to_dict()
+
+    assert 'model' in data
+    nested = data['model']
+    assert 'id' in nested
+    assert 'string' not in nested
+
+    # Wrong way
+    i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
+    i.serialize_only = ('-model.string',)
+    data = i.to_dict()
+
+    assert not data
