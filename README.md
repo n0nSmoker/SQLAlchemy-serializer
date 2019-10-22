@@ -352,7 +352,7 @@ To break the chain of serialisation a bit further.
 ## Controversial rules
 If you add controversial rules like `serialize_rules = ('-prop', 'prop.id')`
 The serializer will exclude the whole `prop`. You need to revert these rules
-or use `serialize_only` option. You can also combine `serialize_only` and `serialize_only`.
+or use `serialize_only` option.
 
 ## Negative rules in ONLY section
 If you pass rules in `serialize_only` the serializer becomes **NOT** greedy and returns **ONLY** fields listed there.
