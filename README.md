@@ -42,7 +42,7 @@ result = item.to_dict()
 You get values of all SQLAlchemy fields in the `result` var, even nested relationships
 In order to change the default output you shuld pass tuple of fieldnames as an argument
 
-- If you want to exclude or add some extra fields (not from dataase) 
+- If you want to exclude or add some extra fields (not from database) 
   You should pass `rules` argument
 - If you want to define the only fields to be presented in serializer's output
   use `only` argument
