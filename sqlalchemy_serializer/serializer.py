@@ -21,6 +21,7 @@ from .lib.rules import Schema
 
 
 logger = logging.getLogger('serializer')
+logger.setLevel(level="WARN")
 
 
 class SerializerMixin(object):
@@ -76,6 +77,7 @@ class SerializerMixin(object):
         :param datetime_format: str
         :param time_format: str
         :param decimal_format: str
+        :param serialize_types:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
@@ -111,7 +113,7 @@ class Serializer(object):
         """
         self.schema = Schema(only=only, extend=extend)
 
-        logger.info(f'Call serializer for type:{get_type(value)}')
+        logger.info('Call serializer for type:%s', get_type(value))
         return self.serialize(value)
 
     @staticmethod
@@ -140,7 +142,7 @@ class Serializer(object):
 
         serializer = Serializer(**self.opts)
         kwargs = self.schema.fork(key=key)
-        logger.info(f'Fork serializer for type:{get_type(value)} with kwargs:{kwargs}')
+        logger.info('Fork serializer for type:%s with kwargs:%s', get_type(value), kwargs)
         return serializer(value, **kwargs)
 
     def serialize(self, value):
@@ -222,7 +224,7 @@ class Serializer(object):
             try:
                 res.append(self.fork(value=v))
             except IsNotSerializable:
-                logger.warning(f'Can not serialize type:{get_type(v)}')
+                logger.warning('Can not serialize type:%s', get_type(v))
                 continue
         return res
 
@@ -235,10 +237,10 @@ class Serializer(object):
         res = {}
         for k, v in value.items():
             if self.schema.is_valid(k):
-                logger.info(f'Serialize key:{k} type:{get_type(v)} of dict')
+                logger.info('Serialize key:%s type:%s of dict', k, get_type(v))
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.info(f'Skip key:{k} of dict')
+                logger.info('Skip key:%s of dict', k)
         return res
 
     def serialize_model(self, value):
@@ -261,10 +263,10 @@ class Serializer(object):
         for k in keys:
             if self.schema.is_valid(k):
                 v = getattr(value, k)
-                logger.info(f'Serialize key:{k} type:{get_type(v)} model:{get_type(value)}')
+                logger.info('Serialize key:%s type:%s model:%s', k, get_type(v), get_type(value))
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.info(f'Skip key:{k} of model:{get_type(value)}')
+                logger.info('Skip key:%s of model:%s', k, get_type(value))
         return res
 
 

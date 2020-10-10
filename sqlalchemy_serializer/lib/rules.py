@@ -32,7 +32,7 @@ class Schema(object):
         for r in extend:
             rules.add(Rule(text=r))
 
-        logger.info(f'Init schema is_greedy:{self.is_greedy} rules:{rules}')
+        logger.info('Init schema is_greedy:%s rules:%s', self.is_greedy, rules)
         self.update_tree(rules)
 
     def __repr__(self):
@@ -64,7 +64,7 @@ class Schema(object):
         if not rules:
             return
 
-        logger.info(f'Update schema with rules:{rules}')
+        logger.info('Update schema with rules:%s', rules)
         for rule in rules:
             head, tail = rule.divide()
 
@@ -142,13 +142,13 @@ class Schema(object):
             res = set()
             if only:
                 self.is_greedy = False
-            logger.info(f'Merge rules into schema only:{only} extend:{extend}')
+            logger.info('Merge rules into schema only:%s extend:%s', only, extend)
             for r in only + extend:
                 rule = Rule(text=r)
                 head, tail = rule.divide()
                 branch = self.tree.get(head.to_opposite(), [])
                 if tail and tail.to_opposite() in branch:
-                    logger.info(f'Can not merge rule:{rule}, found opposite one:{tail.to_opposite()}')
+                    logger.info('Can not merge rule:%s, found opposite one:%s', rule, tail.to_opposite())
                     continue
                 res.add(rule)
             self.update_tree(res)
@@ -248,7 +248,7 @@ class Rule(object):
         :return: tuple
         """
         head, *tail = Rule.to_list(self.text)
-        logger.info(f'Split {self.text} into {head} and {tail}')
+        logger.info('Split %s into %s and %s', self.text, head, tail)
         head = Rule(head)
         if tail:
             tail = Rule(Rule.to_string(tail))
