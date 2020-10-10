@@ -6,10 +6,10 @@ with open("README.md", "r") as f:
 
 setup(
     name="SQLAlchemy-serializer",
-    version="1.3.4.2",
+    version="1.3.4.4",
     description="Mixin for SQLAlchemy-models serialization without pain",
-    long_description=long_description,
     long_description_content_type="text/markdown",
+    long_description=long_description,
     author="Y-Bro",
     url="https://github.com/n0nSmoker/SQLAlchemy-serializer",
     keywords=["sqlalchemy", "serialize", "to_dict", "JSON"],

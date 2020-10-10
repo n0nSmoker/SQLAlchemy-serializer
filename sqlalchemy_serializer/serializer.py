@@ -41,7 +41,7 @@ class SerializerMixin(object):
     serialize_types = ()
 
     date_format = '%Y-%m-%d'
-    datetime_format = '%Y-%m-%d %H:%M'
+    datetime_format = '%Y-%m-%d %H:%M:%S'
     time_format = '%H:%M'
     decimal_format = '{}'
 
