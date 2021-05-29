@@ -250,6 +250,7 @@ By default the library can serialize the following types:
  - bytes 
  - bool 
  - type(None)
+ - uuid.UUID
  - time
  - datetime
  - date

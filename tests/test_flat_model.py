@@ -12,15 +12,13 @@ def test_no_defaults_no_rules(get_instance):
 
     # Check SQLAlchemy fields
     assert 'id' in data
-    assert 'string' in data
-    assert data['string'] == i.string
+    assert 'string' in data and data['string'] == i.string
     assert 'date' in data
     assert 'time' in data
     assert 'datetime' in data
-    assert 'bool' in data
-    assert data['bool'] == i.bool
-    assert 'null' in data
-    assert data['null'] is None
+    assert 'bool' in data and data['bool'] == i.bool
+    assert 'null' in data and data['null'] is None
+    assert 'uuid' in data and str(i.uuid) == data['uuid']
 
     # Check non-sql fields (not included in this case, need to be defined explicitly)
     assert 'list' not in data

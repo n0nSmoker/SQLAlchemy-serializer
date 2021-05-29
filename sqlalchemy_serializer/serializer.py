@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, date, time
 from decimal import Decimal
 from enum import Enum
@@ -156,6 +157,7 @@ class Serializer(object):
             *extra_serialization_types,
             (self.simple_types, lambda x: x),  # Should be checked before any other type
             (bytes, lambda x: x.decode()),
+            (uuid.UUID, lambda x: str(x)),
             (time, self.serialize_time),  # Should be checked before datetime
             (datetime, self.serialize_datetime),
             (date, self.serialize_date),

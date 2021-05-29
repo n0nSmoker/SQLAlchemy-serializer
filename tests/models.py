@@ -1,9 +1,11 @@
 from datetime import datetime
 from decimal import Decimal
+from uuid import uuid4
 
 import pytz
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy_serializer import SerializerMixin
@@ -30,6 +32,7 @@ class FlatModel(Base, SerializerMixin):
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
     null = sa.Column(sa.String)
+    uuid = sa.Column(UUID(as_uuid=True), default=lambda: uuid4())
     list = [1, 'test_string', .9, {'key': 123, 'key2': 23423}, {'key': 234}]
     set = {1, 2, 'test_string'}
     dict = dict(key=123, key2={'key': 12})
