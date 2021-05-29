@@ -36,7 +36,7 @@ class SomeModel(db.Model, SerializerMixin):
 This mixin adds **.to_dict()** method to model instances.
 So now you can do something like this:
 ```python
-item = SomeModel.query.filter(.....).one()
+item = SomeModel.query.filter(...).one()
 result = item.to_dict()
 ```
 You get values of all SQLAlchemy fields in the `result` var, even nested relationships
