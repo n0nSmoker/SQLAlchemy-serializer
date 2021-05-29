@@ -348,8 +348,8 @@ def test_controversial_rules(get_instance):
     i.serialize_rules = ('-model', 'model.id')
     data = i.to_dict()
 
-    # Negative rules have higher priority
-    assert 'model' not in data
+    # All rules will be included
+    assert 'model' in data
 
     i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
     i.serialize_rules = ('-model.id',)

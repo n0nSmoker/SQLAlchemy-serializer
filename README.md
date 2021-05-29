@@ -177,6 +177,14 @@ dict(
     )
 )
 ```
+# Recursive models and trees
+If your models have references to each other or you work with large trees
+you need to specify where the serialization should stop.
+```python
+item.to_dict('-children.children')
+```
+In this case only the first level of `children` will be included
+See [Max recursion](#Max_recursion)
 
 # Custom formats
 If you want to change datetime/date/time/decimal format in one model you can specify it like below:
@@ -348,11 +356,11 @@ class RelatedModel(Base, SerializerMixin):
 If for some reason you need the field `user` to be presented in `related_models` field.
 You can change `serialize_rules` to `('-related_models.user.related_models',)`
 To break the chain of serialisation a bit further.
+[Recursive models and trees](#Recursive_models_and_trees)
 
 ## Controversial rules
 If you add controversial rules like `serialize_rules = ('-prop', 'prop.id')`
-The serializer will exclude the whole `prop`. You need to revert these rules
-or use `serialize_only` option.
+The serializer will include `prop` in spite of `-prop` rule.
 
 ## Negative rules in ONLY section
 If you pass rules in `serialize_only` the serializer becomes **NOT** greedy and returns **ONLY** fields listed there.

@@ -17,7 +17,7 @@ from sqlalchemy import inspect as sql_inspect
 
 from .lib.utils import get_type
 from .lib.timezones import to_local_time, format_dt
-from .lib.rules import Schema
+from sqlalchemy_serializer.lib.schema import Schema
 
 
 logger = logging.getLogger('serializer')
@@ -106,22 +106,22 @@ class Serializer(object):
     def __call__(self, value, only=(), extend=()):
         """
         Serialization starts here
-        :param value: Value tu serialize
+        :param value: Value to serialize
         :param only: Exclusive schema of serialization
         :param extend: Rules that extend default schema
         :return: object: JSON-compatible object
         """
-        self.schema = Schema(only=only, extend=extend)
+        if not self.schema:
+            self.schema = Schema()
+        self.schema.update(only=only, extend=extend)
 
-        logger.info('Call serializer for type:%s', get_type(value))
+        logger.debug('Call serializer for type:%s', get_type(value))
         return self.serialize(value)
 
     @staticmethod
-    def is_valid_callable(func):
+    def is_valid_callable(func) -> bool:
         """
         Determines objects that should be called before serialization
-        :param func:
-        :return: bool
         """
         if callable(func):
             i = inspect.getfullargspec(func)
@@ -133,17 +133,19 @@ class Serializer(object):
     def fork(self, value, key=None):
         """
         Process data in a separate serializer
-        :param value:
-        :param key:
         :return: serialized value
         """
         if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
             return self.serialize(value)
 
         serializer = Serializer(**self.opts)
-        kwargs = self.schema.fork(key=key)
-        logger.info('Fork serializer for type:%s with kwargs:%s', get_type(value), kwargs)
-        return serializer(value, **kwargs)
+        if key is None:
+            serializer.schema = self.schema
+        else:
+            serializer.schema = self.schema.fork(key=key)
+
+        logger.debug('Fork serializer for type:%s', get_type(value))
+        return serializer(value)
 
     def serialize(self, value):
         if self.is_valid_callable(value):
@@ -236,11 +238,11 @@ class Serializer(object):
         """
         res = {}
         for k, v in value.items():
-            if self.schema.is_valid(k):
-                logger.info('Serialize key:%s type:%s of dict', k, get_type(v))
+            if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
+                logger.debug('Serialize key:%s type:%s of dict', k, get_type(v))
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.info('Skip key:%s of dict', k)
+                logger.debug('Skip key:%s of dict', k)
         return res
 
     def serialize_model(self, value):
@@ -249,24 +251,23 @@ class Serializer(object):
         :param value:
         :return: dict
         """
-        if self.schema.is_greedy:
-            self.schema.merge(
-                only=value.serialize_only,
-                extend=value.serialize_rules
-            )
+        self.schema.update(
+            only=value.serialize_only,
+            extend=value.serialize_rules
+        )
 
         res = {}
-        # Check not negative keys from schema
-        keys = self.schema.get_heads()
-        # And model's keys
-        keys.update(set(value.serializable_keys))
+        keys = self.schema.keys
+        if self.schema.is_greedy:
+            keys.update(value.serializable_keys)
+
         for k in keys:
-            if self.schema.is_valid(k):
+            if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
                 v = getattr(value, k)
-                logger.info('Serialize key:%s type:%s model:%s', k, get_type(v), get_type(value))
+                logger.debug('Serialize key:%s type:%s model:%s', k, get_type(v), get_type(value))
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.info('Skip key:%s of model:%s', k, get_type(value))
+                logger.debug('Skip key:%s of model:%s', k, get_type(value))
         return res
 
 

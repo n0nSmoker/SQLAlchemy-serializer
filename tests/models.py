@@ -80,6 +80,16 @@ class NestedModel(Base, SerializerMixin):
         return f'(NESTED)User defined protected method + {self.string}'
 
 
+class RecursiveModel(Base, SerializerMixin):
+    __tablename__ = 'recursive_model'
+    serialize_only = ()
+
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(256), default='some name')
+    parent_id = sa.Column(sa.Integer, sa.ForeignKey('recursive_model.id'))
+    children = relationship('RecursiveModel')
+
+
 # Custom serializer
 CUSTOM_TZINFO = pytz.timezone('Asia/Krasnoyarsk')
 CUSTOM_DATE_FORMAT = '%s'  # Unixtimestamp (seconds)

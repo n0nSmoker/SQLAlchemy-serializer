@@ -1,9 +1,15 @@
 import os
 import pytest
+import logging
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from .models import Base
+
+
+logger = logging.getLogger('serializer')
+logger.setLevel(logging.DEBUG)
 
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M'

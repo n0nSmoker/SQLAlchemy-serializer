@@ -6,7 +6,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="SQLAlchemy-serializer",
-    version="1.3.4.4",
+    version="1.4",
     description="Mixin for SQLAlchemy-models serialization without pain",
     long_description_content_type="text/markdown",
     long_description=long_description,
