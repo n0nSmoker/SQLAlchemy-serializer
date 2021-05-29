@@ -184,7 +184,7 @@ you need to specify where the serialization should stop.
 item.to_dict('-children.children')
 ```
 In this case only the first level of `children` will be included
-See [Max recursion](#Max_recursion)
+See [Max recursion](#Max-recursion)
 
 # Custom formats
 If you want to change datetime/date/time/decimal format in one model you can specify it like below:
@@ -357,7 +357,7 @@ class RelatedModel(Base, SerializerMixin):
 If for some reason you need the field `user` to be presented in `related_models` field.
 You can change `serialize_rules` to `('-related_models.user.related_models',)`
 To break the chain of serialisation a bit further.
-[Recursive models and trees](#Recursive_models_and_trees)
+[Recursive models and trees](#Recursive-models-and-trees)
 
 ## Controversial rules
 If you add controversial rules like `serialize_rules = ('-prop', 'prop.id')`
