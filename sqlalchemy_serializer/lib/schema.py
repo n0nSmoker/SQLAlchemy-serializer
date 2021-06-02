@@ -72,10 +72,14 @@ class Schema:
         return self._tree.is_greedy
 
     def update(self, extend=(), only=()):
-        is_greedy = not only and self.is_greedy
+        if extend:
+            self.apply(rules=extend, is_greedy=True)
+        if only:
+            self.apply(rules=only, is_greedy=False)
 
+    def apply(self, rules, is_greedy):
         rules_tree = Tree()
-        for raw in only + extend:
+        for raw in rules:
             logger.debug('Checking rule:%s', raw)
             rule = Rule(raw)
 
@@ -114,7 +118,7 @@ class Schema:
                     current = node  # Go deeper
 
         if rules_tree:
-            logger.debug('Updating tree with extend:%s only:%s', extend, only)
+            logger.debug('Updating tree with rules:%s is_greedy:%s', rules, is_greedy)
             merge_trees(self._tree, rules_tree)
 
     def is_included(self, key: str) -> bool:

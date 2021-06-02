@@ -380,3 +380,31 @@ def test_controversial_rules(get_instance):
     data = i.to_dict()
 
     assert not data
+
+
+def test_combination(get_instance):
+    flat = get_instance(FlatModel)
+    nested = get_instance(NestedModel, model_id=flat.id)
+    res = nested.to_dict(
+        only=('model', 'set'),
+        rules=('model.set', '-model.id', '-model.date')
+    )
+    assert set(res.keys()) == {'model', 'set'}
+    assert set(res['model'].keys()) == {
+        'string', 'datetime', 'time', 'bool', 'null', 'uuid', 'set'
+    }
+
+
+def test_combination2(get_instance):
+    flat = get_instance(FlatModel)
+    flat.serialize_only = ('id', 'date', 'string', 'time')
+    nested = get_instance(NestedModel, model_id=flat.id)
+    res = nested.to_dict(
+        only=('model', 'set'),
+        rules=('model.set', '-model.id', '-model.date')
+    )
+    assert set(res.keys()) == {'model', 'set'}
+    assert set(res['model'].keys()) == {
+        'string', 'time', 'set'
+    }
+
