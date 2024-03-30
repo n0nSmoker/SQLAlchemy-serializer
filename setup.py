@@ -1,12 +1,12 @@
 from setuptools import setup
 
 
-with open("README.md", "r") as f:
+with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
     name="SQLAlchemy-serializer",
-    version="1.4.1",
+    version="1.4.2",
     description="Mixin for SQLAlchemy-models serialization without pain",
     long_description_content_type="text/markdown",
     long_description=long_description,
