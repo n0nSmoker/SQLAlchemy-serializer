@@ -4,6 +4,7 @@ from decimal import Decimal
 from enum import Enum
 import logging
 import inspect
+from collections import namedtuple
 
 try:
     # Python 3
@@ -82,15 +83,18 @@ class SerializerMixin:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
-        s = Serializer(
+        s = Serializer(Options(
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types
-        )
+        ))
         return s(self, only=only, extend=rules)
+
+
+Options = namedtuple('Options', 'date_format datetime_format time_format decimal_format tzinfo serialize_types')
 
 
 class Serializer:
@@ -100,8 +104,8 @@ class Serializer:
     simple_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
     complex_types = (Iterable, dict, SerializerMixin)
 
-    def __init__(self, **kwargs):
-        self.opts = kwargs
+    def __init__(self, options: Options):
+        self.opts = options
         self.schema = Schema()
 
     def __call__(self, value, only=(), extend=()):
@@ -137,7 +141,7 @@ class Serializer:
         if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
             return self.serialize(value)
 
-        serializer = Serializer(**self.opts)
+        serializer = Serializer(options=self.opts)
         if key is None:
             serializer.schema = self.schema
         else:
@@ -150,7 +154,7 @@ class Serializer:
         if self.is_valid_callable(value):
             value = value()
 
-        extra_serialization_types = self.opts.get('serialize_types', ())
+        extra_serialization_types = self.opts.serialize_types or ()
         serialize_types = (
             *extra_serialization_types,
             (self.simple_types, lambda x: x),  # Should be checked before any other type
@@ -176,11 +180,11 @@ class Serializer:
         :param value:
         :return: serialized value
         """
-        tz = self.opts.get('tzinfo')
-        if tz:
-            value = to_local_time(dt=value, tzinfo=tz)
+        if self.opts.tzinfo:
+            value = to_local_time(dt=value, tzinfo=self.opts.tzinfo)
+
         return format_dt(
-            tpl=self.opts.get('datetime_format'),
+            tpl=self.opts.datetime_format,
             dt=value
         )
 
@@ -191,7 +195,7 @@ class Serializer:
         :return: serialized value
         """
         return format_dt(
-            tpl=self.opts.get('date_format'),
+            tpl=self.opts.date_format,
             dt=value
         )
 
@@ -202,7 +206,7 @@ class Serializer:
         :return: serialized value
         """
         return format_dt(
-            tpl=self.opts.get('time_format'),
+            tpl=self.opts.time_format,
             dt=value
         )
 
@@ -212,8 +216,7 @@ class Serializer:
         :param value:
         :return: serialized value
         """
-        f = self.opts.get('decimal_format')
-        return f.format(value)
+        return self.opts.decimal_format.format(value)
 
     def serialize_iter(self, value):
         """
