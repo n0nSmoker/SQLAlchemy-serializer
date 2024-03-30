@@ -49,7 +49,7 @@ def test_add_custom_serialization_types(get_instance):
     # Redefine serializer
     CustomSerializerModel.serialize_types = (
         (str, lambda x: 'New value'),
-        (int, lambda x: x+1)
+        (int, lambda x: x + 1)
     )
     i = get_instance(CustomSerializerModel)
     data = i.to_dict()

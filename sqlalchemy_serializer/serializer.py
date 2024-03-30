@@ -25,7 +25,7 @@ logger = logging.getLogger('serializer')
 logger.setLevel(level="WARN")
 
 
-class SerializerMixin(object):
+class SerializerMixin:
     """
     Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain
     Can be inherited to redefine get_tzinfo callback, datetime formats or to add some extra serialization logic
@@ -93,7 +93,7 @@ class SerializerMixin(object):
         return s(self, only=only, extend=rules)
 
 
-class Serializer(object):
+class Serializer:
     """
     All serialization logic is implemented here
     """
@@ -102,7 +102,7 @@ class Serializer(object):
 
     def __init__(self, **kwargs):
         self.opts = kwargs
-        self.schema = None
+        self.schema = Schema()
 
     def __call__(self, value, only=(), extend=()):
         """
@@ -112,8 +112,6 @@ class Serializer(object):
         :param extend: Rules that extend default schema
         :return: object: JSON-compatible object
         """
-        if not self.schema:
-            self.schema = Schema()
         self.schema.update(only=only, extend=extend)
 
         logger.debug('Call serializer for type:%s', get_type(value))
