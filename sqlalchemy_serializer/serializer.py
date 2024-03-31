@@ -18,8 +18,8 @@ from types import MethodType
 from sqlalchemy import inspect as sql_inspect
 
 from sqlalchemy_serializer.lib.utils import get_type
-from sqlalchemy_serializer.lib.timezones import to_local_time, format_dt
 from sqlalchemy_serializer.lib.schema import Schema
+from sqlalchemy_serializer.lib import serializable
 
 
 logger = logging.getLogger('serializer')
@@ -34,13 +34,13 @@ class SerializerMixin:
 
     # Default exclusive schema.
     # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
-    serialize_only = ()
+    serialize_only: tuple = tuple()
 
     # Additions to default schema. Can include negative rules
-    serialize_rules = ()
+    serialize_rules: tuple = tuple()
 
     # Extra serialising functions
-    serialize_types = ()
+    serialize_types: tuple = tuple()
 
     date_format = '%Y-%m-%d'
     datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -158,12 +158,12 @@ class Serializer:
         serialize_types = (
             *extra_serialization_types,
             (self.simple_types, lambda x: x),  # Should be checked before any other type
-            (bytes, lambda x: x.decode()),
-            (uuid.UUID, lambda x: str(x)),
-            (time, self.serialize_time),  # Should be checked before datetime
-            (datetime, self.serialize_datetime),
-            (date, self.serialize_date),
-            (Decimal, self.serialize_decimal),
+            (bytes, serializable.Bytes()),
+            (uuid.UUID, serializable.UUID()),
+            (time, serializable.Time(str_format=self.opts.time_format)),  # Should be checked before datetime
+            (datetime, serializable.DateTime(str_format=self.opts.datetime_format, tzinfo=self.opts.tzinfo)),
+            (date, serializable.Date(str_format=self.opts.date_format)),
+            (Decimal, serializable.Decimal(str_format=self.opts.decimal_format)),
             (dict, self.serialize_dict),  # Should be checked before Iterable
             (Iterable, self.serialize_iter),
             (Enum, lambda x: x.value),
@@ -173,50 +173,6 @@ class Serializer:
             if isinstance(value, types):
                 return callback(value)
         raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
-
-    def serialize_datetime(self, value):
-        """
-        datetime.datetime serialization logic
-        :param value:
-        :return: serialized value
-        """
-        if self.opts.tzinfo:
-            value = to_local_time(dt=value, tzinfo=self.opts.tzinfo)
-
-        return format_dt(
-            tpl=self.opts.datetime_format,
-            dt=value
-        )
-
-    def serialize_date(self, value):
-        """
-        datetime.date serialization logic
-        :param value:
-        :return: serialized value
-        """
-        return format_dt(
-            tpl=self.opts.date_format,
-            dt=value
-        )
-
-    def serialize_time(self, value):
-        """
-        datetime.time serialization logic
-        :param value:
-        :return: serialized value
-        """
-        return format_dt(
-            tpl=self.opts.time_format,
-            dt=value
-        )
-
-    def serialize_decimal(self, value):
-        """
-        decimal serialization logic
-        :param value:
-        :return: serialized value
-        """
-        return self.opts.decimal_format.format(value)
 
     def serialize_iter(self, value):
         """
