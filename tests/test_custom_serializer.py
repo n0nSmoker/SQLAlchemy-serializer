@@ -48,7 +48,7 @@ def test_add_custom_serialization_types(get_instance):
 
     # Redefine serializer
     CustomSerializerModel.serialize_types = (
-        (str, lambda x: 'New value'),
+        (str, lambda _: 'New value'),
         (int, lambda x: x + 1)
     )
     i = get_instance(CustomSerializerModel)
