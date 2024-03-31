@@ -83,14 +83,14 @@ class SerializerMixin:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
-        s = Serializer(Options(
+        s = Serializer(
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types
-        ))
+        )
         return s(self, only=only, extend=rules)
 
 
@@ -104,8 +104,8 @@ class Serializer:
     simple_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
     complex_types = (Iterable, dict, SerializerMixin)
 
-    def __init__(self, options: Options):
-        self.opts = options
+    def __init__(self, **kwargs):
+        self.opts = Options(**kwargs)  # Serializer o
         self.schema = Schema()
 
     def __call__(self, value, only=(), extend=()):
@@ -141,7 +141,7 @@ class Serializer:
         if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
             return self.serialize(value)
 
-        serializer = Serializer(options=self.opts)
+        serializer = Serializer(**self.opts._asdict())
         if key is None:
             serializer.schema = self.schema
         else:
