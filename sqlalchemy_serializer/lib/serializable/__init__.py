@@ -4,6 +4,7 @@ from .datetime import DateTime
 from .time import Time
 from .uuid import UUID
 from .decimal import Decimal
+from .enum import Enum
 
 
-__all__ = ['Bytes', 'Date', 'DateTime', 'Decimal', 'Time', 'UUID']
+__all__ = ['Bytes', 'Date', 'DateTime', 'Decimal', 'Time', 'UUID', 'Enum']
