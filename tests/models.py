@@ -109,7 +109,7 @@ class CustomSerializerMixin(SerializerMixin):
     decimal_format = CUSTOM_DECIMAL_FORMAT
 
     serialize_types = (
-        (str, lambda x: CUSTOM_STR_VALUE),
+        (str, lambda _: CUSTOM_STR_VALUE),
     )
 
     def get_tzinfo(self):
@@ -128,4 +128,3 @@ class CustomSerializerModel(Base, CustomSerializerMixin):
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
     money = MONEY
-
