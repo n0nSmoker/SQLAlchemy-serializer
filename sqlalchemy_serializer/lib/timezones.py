@@ -6,7 +6,7 @@ def to_local_time(dt: datetime, tzinfo) -> datetime:
     return normalized.replace(tzinfo=None)
 
 
-def format_dt(dt: datetime, tpl=None) -> str:
+def format_dt(dt, tpl=None) -> str:
     if not tpl:
         return dt.isoformat()
     return dt.strftime(tpl)
