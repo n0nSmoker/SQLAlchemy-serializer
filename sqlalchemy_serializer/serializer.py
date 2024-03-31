@@ -166,7 +166,7 @@ class Serializer:
             (Decimal, self.serialize_decimal),
             (dict, self.serialize_dict),  # Should be checked before Iterable
             (Iterable, self.serialize_iter),
-            (Enum, lambda x: value.value),
+            (Enum, lambda x: x.value),
             (SerializerMixin, self.serialize_model),
         )
         for types, callback in serialize_types:
