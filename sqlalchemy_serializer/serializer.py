@@ -17,8 +17,8 @@ from types import MethodType
 
 from sqlalchemy import inspect as sql_inspect
 
-from .lib.utils import get_type
-from .lib.timezones import to_local_time, format_dt
+from sqlalchemy_serializer.lib.utils import get_type
+from sqlalchemy_serializer.lib.timezones import to_local_time, format_dt
 from sqlalchemy_serializer.lib.schema import Schema
 
 
