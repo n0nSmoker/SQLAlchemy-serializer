@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 with open("README.md", "r", encoding="utf-8") as f:
@@ -6,14 +6,14 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="SQLAlchemy-serializer",
-    version="1.4.4",
+    version="1.4.12",
     description="Mixin for SQLAlchemy-models serialization without pain",
     long_description_content_type="text/markdown",
     long_description=long_description,
     author="Y-Bro",
     url="https://github.com/n0nSmoker/SQLAlchemy-serializer",
     keywords=["sqlalchemy", "serialize", "to_dict", "JSON"],
-    packages=["sqlalchemy_serializer", "sqlalchemy_serializer.lib"],
+    packages=find_packages(exclude=("tests*", "examples*")),
     install_requires=[
         "SQLAlchemy",
     ],
