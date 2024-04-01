@@ -99,7 +99,6 @@ Options = namedtuple('Options', 'date_format datetime_format time_format decimal
 
 class Serializer:
     atomic_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
-    complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
         self.opts = Options(**kwargs)  # Serializer o
@@ -145,12 +144,18 @@ class Serializer:
             return not any([i.args, i.varargs, i.varkw])
         return False
 
+    def is_forkable(self, value):
+        """
+        Determines if object should be processed in a separate serializer
+        """
+        return not isinstance(value, str) and isinstance(value, (Iterable, dict, SerializerMixin))
+
     def fork(self, value, key=None):
         """
         Process data in a separate serializer
         :return: serialized value
         """
-        if isinstance(value, self.atomic_types) or not isinstance(value, self.complex_types):
+        if not self.is_forkable(value):
             return self.serialize(value)
 
         serializer = Serializer(**self.opts._asdict())
