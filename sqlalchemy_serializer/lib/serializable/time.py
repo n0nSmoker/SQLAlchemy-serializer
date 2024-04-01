@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy_serializer.lib.timezones import format_dt
-from .base import Base
+from sqlalchemy_serializer.lib.serializable.base import Base
 
 
 class Time(Base):

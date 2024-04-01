@@ -1,5 +1,5 @@
 import enum
-from .base import Base
+from sqlalchemy_serializer.lib.serializable.base import Base
 
 
 class Enum(Base):
