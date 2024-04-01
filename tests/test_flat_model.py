@@ -4,8 +4,6 @@ from .models import FlatModel, DATETIME, TIME, DATE, MONEY
 def test_no_defaults_no_rules(get_instance):
     """
     Checks to_dict method of flat model with no predefined options
-    :param get_instance:
-    :return:
     """
     i = get_instance(FlatModel)
     data = i.to_dict()
@@ -33,8 +31,6 @@ def test_no_defaults_no_rules(get_instance):
 def test_default_formats(get_instance):
     """
     Check date/datetime/time/decimal default formats in resulting JSON of flat model with no predefined options
-    :param get_instance:
-    :return:
     """
     i = get_instance(FlatModel)
 
@@ -64,8 +60,6 @@ def test_default_formats(get_instance):
 def test_formats_got_in_runtime(get_instance):
     """
     Check date/datetime/time/decimal default formats in resulting JSON passed as the parameters of to_dict func
-    :param get_instance:
-    :return:
     """
     d_format = '%Y/%m/%d'
     dt_format = '%Y/%m/%d %H:%M'

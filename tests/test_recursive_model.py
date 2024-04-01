@@ -4,8 +4,6 @@ from .models import RecursiveModel
 def test_no_rules(get_instance):
     """
     Checks to_dict method of model without rules
-    :param get_instance:
-    :return:
     """
     root = get_instance(RecursiveModel)
     child_full = get_instance(RecursiveModel, parent_id=root.id)
@@ -27,8 +25,6 @@ def test_rules_in_class(get_instance):
     """
     Checks to_dict method of model with rules
     defined on class level
-    :param get_instance:
-    :return:
     """
     root = get_instance(RecursiveModel)
     child_full = get_instance(RecursiveModel, parent_id=root.id)

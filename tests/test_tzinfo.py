@@ -6,8 +6,7 @@ from .models import FlatModel, DATETIME, TIME, DATE
 def test_tzinfo_set_directly(get_instance):
     """
     Checks how serializer applies tzinfo for datetime objects
-    :param get_instance:
-    :return:
+
     """
     i = get_instance(FlatModel)
 
@@ -28,4 +27,3 @@ def test_tzinfo_set_directly(get_instance):
 
     # Timezone info affects only datetime objects
     assert data['datetime'] == DATETIME.astimezone(tzinfo).strftime(dt_format)
-
