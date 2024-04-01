@@ -98,15 +98,27 @@ Options = namedtuple('Options', 'date_format datetime_format time_format decimal
 
 
 class Serializer:
-    """
-    All serialization logic is implemented here
-    """
     simple_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
     complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
         self.opts = Options(**kwargs)  # Serializer o
         self.schema = Schema()
+
+        self.serialize_types = (
+            *(self.opts.serialize_types or ()),
+            (self.simple_types, lambda x: x),  # Should be checked before any other type
+            (bytes, serializable.Bytes()),
+            (uuid.UUID, serializable.UUID()),
+            (time, serializable.Time(str_format=self.opts.time_format)),  # Should be checked before datetime
+            (datetime, serializable.DateTime(str_format=self.opts.datetime_format, tzinfo=self.opts.tzinfo)),
+            (date, serializable.Date(str_format=self.opts.date_format)),
+            (Decimal, serializable.Decimal(str_format=self.opts.decimal_format)),
+            (dict, self.serialize_dict),  # Should be checked before Iterable
+            (Iterable, self.serialize_iter),
+            (Enum, serializable.Enum()),
+            (SerializerMixin, self.serialize_model),
+        )
 
     def __call__(self, value, only=(), extend=()):
         """
@@ -154,22 +166,7 @@ class Serializer:
         if self.is_valid_callable(value):
             value = value()
 
-        extra_serialization_types = self.opts.serialize_types or ()
-        serialize_types = (
-            *extra_serialization_types,
-            (self.simple_types, lambda x: x),  # Should be checked before any other type
-            (bytes, serializable.Bytes()),
-            (uuid.UUID, serializable.UUID()),
-            (time, serializable.Time(str_format=self.opts.time_format)),  # Should be checked before datetime
-            (datetime, serializable.DateTime(str_format=self.opts.datetime_format, tzinfo=self.opts.tzinfo)),
-            (date, serializable.Date(str_format=self.opts.date_format)),
-            (Decimal, serializable.Decimal(str_format=self.opts.decimal_format)),
-            (dict, self.serialize_dict),  # Should be checked before Iterable
-            (Iterable, self.serialize_iter),
-            (Enum, serializable.Enum()),
-            (SerializerMixin, self.serialize_model),
-        )
-        for types, callback in serialize_types:
+        for types, callback in self.serialize_types:
             if isinstance(value, types):
                 return callback(value)
         raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
