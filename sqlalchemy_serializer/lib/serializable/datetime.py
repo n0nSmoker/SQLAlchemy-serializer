@@ -1,6 +1,5 @@
 from datetime import datetime
-from sqlalchemy_serializer.lib.timezones import format_dt, to_local_time
-from sqlalchemy_serializer.lib.serializable.base import Base
+from .base import Base
 
 
 class DateTime(Base):
@@ -16,3 +15,14 @@ class DateTime(Base):
             tpl=self.str_format,
             dt=value
         )
+
+
+def to_local_time(dt: datetime, tzinfo) -> datetime:
+    normalized = dt.astimezone(tzinfo)
+    return normalized.replace(tzinfo=None)
+
+
+def format_dt(dt, tpl=None) -> str:
+    if not tpl:
+        return dt.isoformat()
+    return dt.strftime(tpl)

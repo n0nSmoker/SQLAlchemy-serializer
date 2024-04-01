@@ -17,9 +17,9 @@ from types import MethodType
 
 from sqlalchemy import inspect as sql_inspect
 
-from sqlalchemy_serializer.lib.utils import get_type
-from sqlalchemy_serializer.lib.schema import Schema
-from sqlalchemy_serializer.lib import serializable
+from .lib.utils import get_type
+from .lib.schema import Schema
+from .lib import serializable
 
 
 logger = logging.getLogger('serializer')

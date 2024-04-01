@@ -1,4 +1,4 @@
-from sqlalchemy_serializer.lib.serializable.base import Base
+from .base import Base
 
 
 class Bytes(Base):
