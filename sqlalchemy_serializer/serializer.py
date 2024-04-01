@@ -98,7 +98,7 @@ Options = namedtuple('Options', 'date_format datetime_format time_format decimal
 
 
 class Serializer:
-    simple_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
+    atomic_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
     complex_types = (Iterable, dict, SerializerMixin)
 
     def __init__(self, **kwargs):
@@ -107,7 +107,7 @@ class Serializer:
 
         self.serialize_types = (
             *(self.opts.serialize_types or ()),
-            (self.simple_types, lambda x: x),  # Should be checked before any other type
+            (self.atomic_types, lambda x: x),  # Should be checked before any other type
             (bytes, serializable.Bytes()),
             (uuid.UUID, serializable.UUID()),
             (time, serializable.Time(str_format=self.opts.time_format)),  # Should be checked before datetime
@@ -150,7 +150,7 @@ class Serializer:
         Process data in a separate serializer
         :return: serialized value
         """
-        if isinstance(value, self.simple_types) or not isinstance(value, self.complex_types):
+        if isinstance(value, self.atomic_types) or not isinstance(value, self.complex_types):
             return self.serialize(value)
 
         serializer = Serializer(**self.opts._asdict())
