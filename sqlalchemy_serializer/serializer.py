@@ -176,11 +176,9 @@ class Serializer:
                 return callback(value)
         raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
 
-    def serialize_iter(self, value):
+    def serialize_iter(self, value) -> list:
         """
         Serialization logic for any iterable object
-        :param value:
-        :return: list
         """
         res = []
         for v in value:
@@ -191,11 +189,9 @@ class Serializer:
                 continue
         return res
 
-    def serialize_dict(self, value):
+    def serialize_dict(self, value) -> dict:
         """
         Serialization logic for any dict
-        :param value:
-        :return: dict
         """
         res = {}
         for k, v in value.items():
@@ -206,11 +202,9 @@ class Serializer:
                 logger.debug('Skip key:%s of dict', k)
         return res
 
-    def serialize_model(self, value):
+    def serialize_model(self, value) -> dict:
         """
         Serialization logic for instances of SerializerMixin
-        :param value:
-        :return: dict
         """
         self.schema.update(
             only=value.serialize_only,
