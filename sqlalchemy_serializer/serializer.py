@@ -17,7 +17,6 @@ from types import MethodType
 
 from sqlalchemy import inspect as sql_inspect
 
-from .lib.utils import get_type
 from .lib.schema import Schema
 from .lib import serializable
 
@@ -228,3 +227,7 @@ class Serializer:
 
 class IsNotSerializable(Exception):
     pass
+
+
+def get_type(o):
+    return type(o).__name__
