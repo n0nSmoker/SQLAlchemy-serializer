@@ -313,6 +313,3 @@ def check_rule(text: str, tree: Tree) -> Tree:
 
 class NoNodeException(Exception):
     pass
-
-
-
