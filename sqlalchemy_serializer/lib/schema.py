@@ -136,7 +136,6 @@ class Schema:
 
 def merge_trees(old: Tree, *trees):
     for tree in trees:
-        # logger.debug('Merging trees:\nold->\n%s\nnew->\n:%s', old, tree)
         old.apply(tree)
         for k in tree.keys():
             merge_trees(old[k], tree[k])
