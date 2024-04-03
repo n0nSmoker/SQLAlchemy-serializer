@@ -222,5 +222,5 @@ class IsNotSerializable(Exception):
     pass
 
 
-def get_type(o):
-    return type(o).__name__
+def get_type(value) -> str:
+    return type(value).__name__
