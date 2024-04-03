@@ -7,7 +7,7 @@ import inspect
 from collections import namedtuple
 from collections.abc import Iterable
 from types import MethodType
-
+import typing as t
 from sqlalchemy import inspect as sql_inspect
 
 from .lib.schema import Schema
@@ -149,7 +149,7 @@ class Serializer:
         """
         return not isinstance(value, str) and isinstance(value, (Iterable, dict, SerializerMixin))
 
-    def fork(self, value, key: str = None):
+    def fork(self, value, key: t.Optional[str] = None):
         """
         Process data in a separate serializer
         :return: serialized value

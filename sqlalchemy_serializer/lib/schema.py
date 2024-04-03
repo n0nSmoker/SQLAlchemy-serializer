@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+import typing as t
 
 
 logger = logging.getLogger('serializer')
@@ -60,7 +61,7 @@ class Rule:
 
 
 class Schema:
-    def __init__(self, tree: Tree = None):
+    def __init__(self, tree: t.Optional[Tree] = None):
         self._tree = tree or Tree()
 
     @property
