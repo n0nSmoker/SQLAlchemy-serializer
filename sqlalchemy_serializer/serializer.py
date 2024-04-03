@@ -142,7 +142,7 @@ class Serializer:
         """
         return not isinstance(value, str) and isinstance(value, (Iterable, dict, SerializerMixin))
 
-    def fork(self, value, key=None):
+    def fork(self, value, key: str | None = None):
         """
         Process data in a separate serializer
         :return: serialized value
@@ -168,7 +168,7 @@ class Serializer:
                 return callback(value)
         raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
 
-    def serialize_iter(self, value) -> list:
+    def serialize_iter(self, value: Iterable) -> list:
         """
         Serialization logic for any iterable object
         """
@@ -181,7 +181,7 @@ class Serializer:
                 continue
         return res
 
-    def serialize_dict(self, value) -> dict:
+    def serialize_dict(self, value: dict) -> dict:
         """
         Serialization logic for any dict
         """
