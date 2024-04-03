@@ -169,9 +169,6 @@ class Serializer:
         raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
 
     def serialize_iter(self, value: Iterable) -> list:
-        """
-        Serialization logic for any iterable object
-        """
         res = []
         for v in value:
             try:
@@ -182,9 +179,6 @@ class Serializer:
         return res
 
     def serialize_dict(self, value: dict) -> dict:
-        """
-        Serialization logic for any dict
-        """
         res = {}
         for k, v in value.items():
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
@@ -195,9 +189,6 @@ class Serializer:
         return res
 
     def serialize_model(self, value) -> dict:
-        """
-        Serialization logic for instances of SerializerMixin
-        """
         self.schema.update(
             only=value.serialize_only,
             extend=value.serialize_rules
