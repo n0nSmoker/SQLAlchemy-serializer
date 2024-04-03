@@ -50,11 +50,18 @@ class SerializerMixin:
         return None
 
     @property
-    def serializable_keys(self):
+    def serializable_keys(self) -> set:
         """
         :return: set of keys available for serialization
         """
-        return {a.key for a in sql_inspect(self).mapper.attrs}
+        inspector = sql_inspect(self)
+        if inspector and inspector.mapper:
+            return {a.key for a in inspector.mapper.attrs}
+
+        raise AttributeError(
+            'Can not get serializable keys of the model. '
+            'Check if it is mapped correctly or set `serializable_keys` property manually'
+        )
 
     def to_dict(self, only=(), rules=(),
                 date_format=None, datetime_format=None, time_format=None, tzinfo=None,
@@ -142,7 +149,7 @@ class Serializer:
         """
         return not isinstance(value, str) and isinstance(value, (Iterable, dict, SerializerMixin))
 
-    def fork(self, value, key: str | None = None):
+    def fork(self, value, key: str = None):
         """
         Process data in a separate serializer
         :return: serialized value
