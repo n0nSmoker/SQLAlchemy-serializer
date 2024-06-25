@@ -8,7 +8,8 @@ from collections import namedtuple
 from collections.abc import Iterable
 from types import MethodType
 import typing as t
-from sqlalchemy import inspect as sql_inspect
+
+from sqlalchemy_serializer.lib.fields import get_sql_field_names
 
 from .lib.schema import Schema
 from .lib import serializable
@@ -50,18 +51,12 @@ class SerializerMixin:
         return None
 
     @property
-    def serializable_keys(self) -> set:
+    def serializable_keys(self) -> t.Iterable:
         """
         :return: set of keys available for serialization
         """
-        inspector = sql_inspect(self)
-        if inspector and inspector.mapper:
-            return {a.key for a in inspector.mapper.attrs}
-
-        raise AttributeError(
-            'Can not get serializable keys of the model. '
-            'Check if it is mapped correctly or set `serializable_keys` property manually'
-        )
+        result = get_sql_field_names(self)
+        return result
 
     def to_dict(self, only=(), rules=(),
                 date_format=None, datetime_format=None, time_format=None, tzinfo=None,
