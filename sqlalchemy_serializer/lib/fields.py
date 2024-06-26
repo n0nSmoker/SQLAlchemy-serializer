@@ -4,7 +4,7 @@ import inspect
 from sqlalchemy import inspect as sql_inspect
 
 
-def get_sql_field_names(model_instance) -> t.Iterable[str]:
+def get_sql_field_names(model_instance) -> t.Set[str]:
     """
     :return:  set of sql fields names
     :raise:  sqlalchemy.exc.NoInspectionAvailable
@@ -13,9 +13,9 @@ def get_sql_field_names(model_instance) -> t.Iterable[str]:
     return {a.key for a in inspector.mapper.attrs}
 
 
-def get_property_field_names(model_instance) -> t.Iterable[str]:
+def get_property_field_names(model_instance) -> t.Set[str]:
     """
-    :return:  set of field names defined as @property
+    :return: set of field names defined as @property
     """
     cls = model_instance.__class__
     return {
@@ -24,9 +24,18 @@ def get_property_field_names(model_instance) -> t.Iterable[str]:
 
 
 @functools.lru_cache
-def get_serializable_keys(model_instance) -> t.Iterable:
+def get_serializable_keys(model_instance) -> t.Set[str]:
     """
     :return: set of keys available for serialization
+    :raise:  sqlalchemy.exc.NoInspectionAvailable if model_instance is not an sqlalchemy mapper
     """
-    result = get_sql_field_names(model_instance)
+    if model_instance.serializable_keys:
+        result = set(model_instance.serializable_keys)
+
+    else:
+        result = get_sql_field_names(model_instance)
+
+        if model_instance.auto_serialize_properties:
+            result.update(get_property_field_names(model_instance))
+
     return result

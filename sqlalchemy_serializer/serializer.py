@@ -27,13 +27,13 @@ class SerializerMixin:
 
     # Default exclusive schema.
     # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
-    serialize_only: tuple = tuple()
+    serialize_only: tuple = ()
 
     # Additions to default schema. Can include negative rules
-    serialize_rules: tuple = tuple()
+    serialize_rules: tuple = ()
 
     # Extra serialising functions
-    serialize_types: tuple = tuple()
+    serialize_types: tuple = ()
 
     date_format = '%Y-%m-%d'
     datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -41,7 +41,10 @@ class SerializerMixin:
     decimal_format = '{}'
 
     # Custom list of fields to serialize in this model
-    serializable_keys = ()
+    serializable_keys: tuple = ()
+
+    # Serialize fields of the model defined as @property automatically
+    auto_serialize_properties: bool = False
 
     def get_tzinfo(self):
         """
@@ -194,7 +197,7 @@ class Serializer:
         res = {}
         keys = self.schema.keys
         if self.schema.is_greedy:
-            keys.update(value.serializable_keys or get_serializable_keys(value))
+            keys.update(get_serializable_keys(value))
 
         for k in keys:
             if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
