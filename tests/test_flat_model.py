@@ -28,6 +28,40 @@ def test_no_defaults_no_rules(get_instance):
     assert 'money' not in data
 
 
+def test_no_defaults_no_rules_with_auto_serialize_properties(get_instance):
+    """
+    Checks to_dict method of flat model with no predefined options
+    but with automatic serialization of @properties
+    """
+    class AutoPropFlatModel(FlatModel):
+        auto_serialize_properties = True
+
+    i = get_instance(AutoPropFlatModel)
+    data = i.to_dict()
+
+    # Check SQLAlchemy fields
+    assert 'id' in data
+    assert 'string' in data and data['string'] == i.string
+    assert 'date' in data
+    assert 'time' in data
+    assert 'datetime' in data
+    assert 'bool' in data and data['bool'] == i.bool
+    assert 'null' in data and data['null'] is None
+    assert 'uuid' in data and str(i.uuid) == data['uuid']
+
+    # Properties
+    assert 'prop' in data
+    assert 'prop_with_bytes' in data
+
+    # Check non-sql fields
+    assert 'list' not in data
+    assert 'set' not in data
+    assert 'dict' not in data
+    assert 'method' not in data
+    assert '_protected_method' not in data
+    assert 'money' not in data
+
+
 def test_default_formats(get_instance):
     """
     Check date/datetime/time/decimal default formats in resulting JSON of flat model with no predefined options
