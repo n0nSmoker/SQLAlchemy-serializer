@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlalchemy-serializer"
-version = "1.4.20"
+version = "1.4.21"
 description = "Mixin for SQLAlchemy models serialization without pain"
 authors = ["yuri.boiko <yuri.boiko.dev@gmail.com>"]
 license = "MIT"
