@@ -9,7 +9,7 @@ x-environment: &environment
 services:
   tests:
     build: .
-    command: ["pytest", "--pylama", "--cov=sqlalchemy_serializer", "--cov-report", "term-missing", "$TEST_FILE"]
+    command: ["poetry", "run", "pytest", "--pylama", "--cov=sqlalchemy_serializer", "--cov-report", "term-missing", "$TEST_FILE"]
 
     depends_on:
       - db
@@ -18,4 +18,3 @@ services:
   db:
     image: postgres:latest
     <<: *environment
-

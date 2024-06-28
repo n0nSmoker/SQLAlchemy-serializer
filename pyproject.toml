@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "sqlalchemy-serializer"
+version = "1.4.21"
+description = "Mixin for SQLAlchemy models serialization without pain"
+authors = ["yuri.boiko <yuri.boiko.dev@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+include = [
+    "README.md",
+    "LICENSE",
+    "sqlalchemy_serializer/**"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+keywords = ["sqlalchemy", "serialize", "to_dict", "JSON"]
+repository = "https://github.com/n0nSmoker/SQLAlchemy-serializer"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+SQLAlchemy = "2.0.29"
+psycopg2-binary = "2.9.9"
+pytz = "^2024.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.1.1"
+pytest-cov = "5.0.0"
+pylama = "8.4.1"
+requests = "2.32.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
