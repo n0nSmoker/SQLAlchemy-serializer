@@ -1,14 +1,14 @@
 FROM python:3.10.14-alpine
 
-COPY requirements.txt /tmp/base_requirements.txt
-COPY tests/requirements.txt /var/www/app/requirements.txt
-RUN cat tmp/base_requirements.txt >> /var/www/app/requirements.txt
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock* /app/
 
 RUN apk update && \
     apk add build-base postgresql-dev && \
     pip install --no-cache-dir --upgrade pip && \
-    pip install -r /var/www/app/requirements.txt --no-cache-dir && \
+    pip install poetry && \
+    poetry install --no-root --with dev && \
     apk del --purge build-base
 
-WORKDIR /var/www/app
-ADD . /var/www/app
+ADD . /app
