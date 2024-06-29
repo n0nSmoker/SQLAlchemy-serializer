@@ -9,7 +9,27 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+    POSTGRES_HOST: 'localhost'
+    POSTGRES_DB: 'db_name'
+    POSTGRES_USER: 'root'
+    POSTGRES_PASSWORD: 'password'
+
+
+
+
 jobs:
+  start_db:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up test database
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: '11'
+        postgresql db: $POSTGRES_DB
+        postgresql user: $POSTGRES_USER
+        postgresql password: $POSTGRES_PASSWORD
+
   build:
 
     runs-on: ubuntu-latest
