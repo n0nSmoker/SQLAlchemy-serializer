@@ -23,6 +23,7 @@ python = "^3.10"
 SQLAlchemy = "2.0.29"
 psycopg2-binary = "2.9.9"
 pytz = "^2024.1"
+setuptools = "^70.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.1.1"
