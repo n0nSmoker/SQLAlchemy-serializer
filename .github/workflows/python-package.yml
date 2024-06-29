@@ -17,19 +17,7 @@ env:
 
 
 jobs:
-  start_db:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up test database
-      uses: harmon758/postgresql-action@v1
-      with:
-        postgresql version: '11'
-        postgresql db: $POSTGRES_DB
-        postgresql user: $POSTGRES_USER
-        postgresql password: $POSTGRES_PASSWORD
-
   build:
-
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -54,6 +42,14 @@ jobs:
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Set up test database
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: postgres:10.1-alpine
+        postgresql db: $POSTGRES_DB
+        postgresql user: $POSTGRES_USER
+        postgresql password: $POSTGRES_PASSWORD
 
     - name: Run tests
       run: |
