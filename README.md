@@ -42,7 +42,7 @@ result = item.to_dict()
 You get values of all SQLAlchemy fields in the `result` var, even nested relationships
 In order to change the default output you shuld pass tuple of fieldnames as an argument
 
-- If you want to exclude or add some extra fields (not from database) 
+- If you want to exclude or add some extra fields (not from database)
   You should pass `rules` argument
 - If you want to define the only fields to be presented in serializer's output
   use `only` argument
@@ -95,7 +95,7 @@ So the `result` in this case will be `{'somefield': [{'id': some_id}]}`
 ***serialize_only*** and  ***serialize_rules*** work the same way as ***to_dict's*** arguments
 
 
-# Advanced usage 
+# Advanced usage
 For more examples see [tests](https://github.com/n0nSmoker/SQLAlchemy-serializer/tree/master/tests)
 
 ```python
@@ -193,7 +193,7 @@ from sqlalchemy_serializer import SerializerMixin
 
 class SomeModel(db.Model, SerializerMixin):
     __tablename__ = 'custom_table_name'
-    
+
     date_format = '%s'  # Unixtimestamp (seconds)
     datetime_format = '%Y %b %d %H:%M:%S.%f'
     time_format = '%H:%M.%f'
@@ -237,18 +237,18 @@ class CustomSerializerModel(db.Model, CustomSerializerMixin):
 All `date/time/datetime/decimal` fields will be serialized using your custom formats.
 
 - Decimal uses python `format` syntax
-- To get **unixtimestamp** use `%s`, 
+- To get **unixtimestamp** use `%s`,
 - Other `datetime` formats you can find [in docs](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
 
 
 # Custom types
 By default the library can serialize the following types:
  ```
- - int 
- - str 
- - float 
- - bytes 
- - bool 
+ - int
+ - str
+ - float
+ - bytes
+ - bool
  - type(None)
  - uuid.UUID
  - time
@@ -259,7 +259,7 @@ By default the library can serialize the following types:
  - dict (if values and keys are one of types mentioned above, or inherit one of them)
  - any Iterable (if types of values are mentioned above, or inherit one of them)
  ```
- If you want to add serialization of any other type or redefine the default behaviour. 
+ If you want to add serialization of any other type or redefine the default behaviour.
  You should add something like this:
 
 ```python
@@ -325,12 +325,25 @@ from some.package import get_current_user
 
 class CustomSerializerMixin(SerializerMixin):
     def get_tzinfo(self):
-        # you can write your own logic here, 
+        # you can write your own logic here,
         # the example below will work if you store timezone
         # in user's profile
         return pytz.timezone(get_current_user()['timezone'])
 ```
+# Helpers
+## serialize_collection
+If you want to do the following in one line
+```python
+categories = Category.query.all()
+response = [category.to_dict(**some_params) for category in categories]
+```
+use helper
+```python
+from sqlalchemy_serializer import serialize_collection
 
+response = serialize_collection(Category.query.all(), **some_params)
+
+```
 # Troubleshooting
 
 ## Max recursion
@@ -340,13 +353,13 @@ Especially if you use backrefs. In this case you need to tell it where to stop l
 ```python
 class User(Base, SerializerMixin):
     __tablename__ = 'users'
-    
+
     # Exclude nested model of the same class to avoid max recursion error
     serialize_rules = ('-related_models.user',)
     ...
     related_models = relationship("RelatedModel", backref='user')
-    
-    
+
+
 class RelatedModel(Base, SerializerMixin):
     __tablename__ = 'some_table'
 
@@ -369,7 +382,7 @@ So `serialize_only = ('-model.id',)` will return nothing
 But `serialize_only = ('model', '-model.id',)` will return `model` field without `id`
 
 ## One element tuples
-Do not forget to add **comma** at the end of one element tuples, it is trivial, 
+Do not forget to add **comma** at the end of one element tuples, it is trivial,
 but a lot of developers forget about it:
 ```python
 serialize_only = ('some_field',)  # <--- Thats right!
@@ -389,4 +402,3 @@ make test file=tests/some_file.py::test_func
 ```
 
 I will appreciate any help in improving this library, so feel free to submit issues or pull requests.
-
