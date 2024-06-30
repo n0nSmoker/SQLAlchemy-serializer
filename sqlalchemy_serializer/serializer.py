@@ -215,3 +215,7 @@ class IsNotSerializable(Exception):
 
 def get_type(value) -> str:
     return type(value).__name__
+
+
+def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
+    return [item.to_dict(*args, **kwargs) for item in iterable]
