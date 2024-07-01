@@ -34,3 +34,8 @@ requests = "2.32.3"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-xvrs --color=yes"
+log_cli = true
+log_cli_level = "DEBUG"
