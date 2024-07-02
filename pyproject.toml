@@ -39,3 +39,8 @@ build-backend = "poetry.core.masonry.api"
 addopts = "-xvrs --color=yes"
 log_cli = true
 # log_cli_level = "DEBUG"
+
+[tool.pylama]
+ignore = ["E501", "W291", "W292"]
+skip = ["./setup.*"]
+max_line_length = 88
