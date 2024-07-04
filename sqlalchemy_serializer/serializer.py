@@ -21,8 +21,10 @@ logger.setLevel(level="WARN")
 
 class SerializerMixin:
     """
-    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format with no pain
-    Can be inherited to redefine get_tzinfo callback, datetime formats or to add some extra serialization logic
+    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
+    with no pain
+    It can be inherited to redefine get_tzinfo callback, datetime formats or to add
+    some extra serialization logic
     """
 
     # Default exclusive schema.
@@ -73,7 +75,8 @@ class SerializerMixin:
         For details about datetime formats follow:
         https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
 
-        :param only: exclusive schema to replace default one (always have higher priority than rules)
+        :param only: exclusive schema to replace the default one
+            always have higher priority than rules
         :param rules: schema to extend default one or schema defined in "only"
         :param date_format: str
         :param datetime_format: str

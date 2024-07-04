@@ -24,6 +24,7 @@ SQLAlchemy = "2.0.29"
 psycopg2-binary = "2.9.9"
 pytz = "^2024.1"
 setuptools = "^70.1.1"
+black = "^24.4.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.1.1"
@@ -38,9 +39,3 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 addopts = "-xvrs --color=yes"
 log_cli = true
-# log_cli_level = "DEBUG"
-
-[tool.pylama]
-ignore = ["E501", "W291", "W292"]
-skip = ["./setup.*"]
-max_line_length = 88

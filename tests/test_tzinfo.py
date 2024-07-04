@@ -14,16 +14,16 @@ def test_tzinfo_set_directly(get_instance):
     d_format = i.date_format
     dt_format = i.datetime_format
     t_format = i.time_format
-    tzinfo = pytz.timezone('Europe/Moscow')
+    tzinfo = pytz.timezone("Europe/Moscow")
 
     data = i.to_dict(tzinfo=tzinfo)
 
     # No change for time and date objects
-    assert 'date' in data
-    assert data['date'] == DATE.strftime(d_format)
-    assert 'datetime' in data
-    assert 'time' in data
-    assert data['time'] == TIME.strftime(t_format)
+    assert "date" in data
+    assert data["date"] == DATE.strftime(d_format)
+    assert "datetime" in data
+    assert "time" in data
+    assert data["time"] == TIME.strftime(t_format)
 
     # Timezone info affects only datetime objects
-    assert data['datetime'] == DATETIME.astimezone(tzinfo).strftime(dt_format)
+    assert data["datetime"] == DATETIME.astimezone(tzinfo).strftime(dt_format)
