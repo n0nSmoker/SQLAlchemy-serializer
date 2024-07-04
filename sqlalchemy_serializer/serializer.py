@@ -15,7 +15,7 @@ from .lib.schema import Schema
 from .lib import serializable
 
 
-logger = logging.getLogger('serializer')
+logger = logging.getLogger("serializer")
 logger.setLevel(level="WARN")
 
 
@@ -35,10 +35,10 @@ class SerializerMixin:
     # Extra serialising functions
     serialize_types: tuple = ()
 
-    date_format = '%Y-%m-%d'
-    datetime_format = '%Y-%m-%d %H:%M:%S'
-    time_format = '%H:%M'
-    decimal_format = '{}'
+    date_format = "%Y-%m-%d"
+    datetime_format = "%Y-%m-%d %H:%M:%S"
+    time_format = "%H:%M"
+    decimal_format = "{}"
 
     # Custom list of fields to serialize in this model
     serializable_keys: tuple = ()
@@ -56,9 +56,17 @@ class SerializerMixin:
         """
         return None
 
-    def to_dict(self, only=(), rules=(),
-                date_format=None, datetime_format=None, time_format=None, tzinfo=None,
-                decimal_format=None, serialize_types=None):
+    def to_dict(
+        self,
+        only=(),
+        rules=(),
+        date_format=None,
+        datetime_format=None,
+        time_format=None,
+        tzinfo=None,
+        decimal_format=None,
+        serialize_types=None,
+    ):
         """
         Returns SQLAlchemy model's data in JSON compatible format
 
@@ -81,16 +89,25 @@ class SerializerMixin:
             time_format=time_format or self.time_format,
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
-            serialize_types=serialize_types or self.serialize_types
+            serialize_types=serialize_types or self.serialize_types,
         )
         return s(self, only=only, extend=rules)
 
 
-Options = namedtuple('Options', 'date_format datetime_format time_format decimal_format tzinfo serialize_types')
+Options = namedtuple(
+    "Options",
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types",
+)
 
 
 class Serializer:
-    atomic_types = (int, str, float, bool, type(None))  # Types that do nod need any serialization logic
+    atomic_types = (
+        int,
+        str,
+        float,
+        bool,
+        type(None),
+    )  # Types that do nod need any serialization logic
 
     def __init__(self, **kwargs):
         self.opts = Options(**kwargs)  # Serializer o
@@ -101,8 +118,16 @@ class Serializer:
             (self.atomic_types, lambda x: x),  # Should be checked before any other type
             (bytes, serializable.Bytes()),
             (uuid.UUID, serializable.UUID()),
-            (time, serializable.Time(str_format=self.opts.time_format)),  # Should be checked before datetime
-            (datetime, serializable.DateTime(str_format=self.opts.datetime_format, tzinfo=self.opts.tzinfo)),
+            (
+                time,
+                serializable.Time(str_format=self.opts.time_format),
+            ),  # Should be checked before datetime
+            (
+                datetime,
+                serializable.DateTime(
+                    str_format=self.opts.datetime_format, tzinfo=self.opts.tzinfo
+                ),
+            ),
             (date, serializable.Date(str_format=self.opts.date_format)),
             (Decimal, serializable.Decimal(str_format=self.opts.decimal_format)),
             (dict, self.serialize_dict),  # Should be checked before Iterable
@@ -121,7 +146,7 @@ class Serializer:
         """
         self.schema.update(only=only, extend=extend)
 
-        logger.debug('Call serializer for type:%s', get_type(value))
+        logger.debug("Call serializer for type:%s", get_type(value))
         return self.serialize(value)
 
     @staticmethod
@@ -131,7 +156,11 @@ class Serializer:
         """
         if callable(func):
             i = inspect.getfullargspec(func)
-            if i.args == ['self'] and isinstance(func, MethodType) and not any([i.varargs, i.varkw]):
+            if (
+                i.args == ["self"]
+                and isinstance(func, MethodType)
+                and not any([i.varargs, i.varkw])
+            ):
                 return True
             return not any([i.args, i.varargs, i.varkw])
         return False
@@ -140,7 +169,9 @@ class Serializer:
         """
         Determines if object should be processed in a separate serializer
         """
-        return not isinstance(value, str) and isinstance(value, (Iterable, dict, SerializerMixin))
+        return not isinstance(value, str) and isinstance(
+            value, (Iterable, dict, SerializerMixin)
+        )
 
     def fork(self, value, key: t.Optional[str] = None):
         """
@@ -156,7 +187,7 @@ class Serializer:
         else:
             serializer.schema = self.schema.fork(key=key)
 
-        logger.debug('Fork serializer for type:%s', get_type(value))
+        logger.debug("Fork serializer for type:%s", get_type(value))
         return serializer(value)
 
     def serialize(self, value):
@@ -166,7 +197,7 @@ class Serializer:
         for types, callback in self.serialize_types:
             if isinstance(value, types):
                 return callback(value)
-        raise IsNotSerializable(f'Unserializable type:{type(value)} value:{value}')
+        raise IsNotSerializable(f"Unserializable type:{type(value)} value:{value}")
 
     def serialize_iter(self, value: Iterable) -> list:
         res = []
@@ -174,7 +205,7 @@ class Serializer:
             try:
                 res.append(self.fork(value=v))
             except IsNotSerializable:
-                logger.warning('Can not serialize type:%s', get_type(v))
+                logger.warning("Can not serialize type:%s", get_type(v))
                 continue
         return res
 
@@ -182,17 +213,14 @@ class Serializer:
         res = {}
         for k, v in value.items():
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
-                logger.debug('Serialize key:%s type:%s of dict', k, get_type(v))
+                logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.debug('Skip key:%s of dict', k)
+                logger.debug("Skip key:%s of dict", k)
         return res
 
     def serialize_model(self, value) -> dict:
-        self.schema.update(
-            only=value.serialize_only,
-            extend=value.serialize_rules
-        )
+        self.schema.update(only=value.serialize_only, extend=value.serialize_rules)
 
         res = {}
         keys = self.schema.keys
@@ -202,10 +230,12 @@ class Serializer:
         for k in keys:
             if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
                 v = getattr(value, k)
-                logger.debug('Serialize key:%s type:%s model:%s', k, get_type(v), get_type(value))
+                logger.debug(
+                    "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
+                )
                 res[k] = self.fork(key=k, value=v)
             else:
-                logger.debug('Skip key:%s of model:%s', k, get_type(value))
+                logger.debug("Skip key:%s of model:%s", k, get_type(value))
         return res
 
 
