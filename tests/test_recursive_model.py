@@ -12,13 +12,13 @@ def test_no_rules(get_instance):
     # No rules
     data = root.to_dict()
 
-    assert 'children' in data
-    assert 'children' in data['children'][0]
-    assert 'children' in data['children'][0]['children'][0]
+    assert "children" in data
+    assert "children" in data["children"][0]
+    assert "children" in data["children"][0]["children"][0]
 
-    assert 'name' in data
-    assert 'name' in data['children'][0]
-    assert 'name' in data['children'][0]['children'][0]
+    assert "name" in data
+    assert "name" in data["children"][0]
+    assert "name" in data["children"][0]["children"][0]
 
 
 def test_rules_in_class(get_instance):
@@ -30,16 +30,16 @@ def test_rules_in_class(get_instance):
     child_full = get_instance(RecursiveModel, parent_id=root.id)
     _ = get_instance(RecursiveModel, parent_id=child_full.id)
 
-    RecursiveModel.serialize_rules = ('-children.children.children',)
+    RecursiveModel.serialize_rules = ("-children.children.children",)
     data = root.to_dict()
 
-    assert 'children' in data
-    assert 'children' in data['children'][0]
-    assert 'children' not in data['children'][0]['children'][0]
+    assert "children" in data
+    assert "children" in data["children"][0]
+    assert "children" not in data["children"][0]["children"][0]
 
-    assert 'name' in data
-    assert 'name' in data['children'][0]
-    assert 'name' in data['children'][0]['children'][0]
+    assert "name" in data
+    assert "name" in data["children"][0]
+    assert "name" in data["children"][0]["children"][0]
 
 
 def test_rules_in_method_call(get_instance):
@@ -52,15 +52,15 @@ def test_rules_in_method_call(get_instance):
     _ = get_instance(RecursiveModel, parent_id=child_full.id)
 
     RecursiveModel.serialize_rules = ()
-    data = root.to_dict(rules=('-children.children.children',))
+    data = root.to_dict(rules=("-children.children.children",))
 
-    assert 'children' in data
-    assert 'children' in data['children'][0]
-    assert 'children' not in data['children'][0]['children'][0]
+    assert "children" in data
+    assert "children" in data["children"][0]
+    assert "children" not in data["children"][0]["children"][0]
 
-    assert 'name' in data
-    assert 'name' in data['children'][0]
-    assert 'name' in data['children'][0]['children'][0]
+    assert "name" in data
+    assert "name" in data["children"][0]
+    assert "name" in data["children"][0]["children"][0]
 
 
 def test_combination_of_rules(get_instance):
@@ -72,17 +72,14 @@ def test_combination_of_rules(get_instance):
     child_full = get_instance(RecursiveModel, parent_id=root.id)
     _ = get_instance(RecursiveModel, parent_id=child_full.id)
 
-    RecursiveModel.serialize_rules = (
-        '-children.children',
-        '-children.id'
-    )
+    RecursiveModel.serialize_rules = ("-children.children", "-children.id")
     data = root.to_dict()
 
-    assert 'children' in data
-    assert 'children' not in data['children'][0]
+    assert "children" in data
+    assert "children" not in data["children"][0]
 
-    assert 'name' in data
-    assert 'name' in data['children'][0]
+    assert "name" in data
+    assert "name" in data["children"][0]
 
-    assert 'id' in data
-    assert 'id' not in data['children'][0]
+    assert "id" in data
+    assert "id" not in data["children"][0]

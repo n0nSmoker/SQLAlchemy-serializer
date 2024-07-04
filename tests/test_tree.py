@@ -11,8 +11,8 @@ def test_tree_defaults():
     assert tree.default_factory == Tree
     assert not tree
 
-    assert tree.get('random_key1') is None
-    assert isinstance(tree['random_key2'], Tree)
+    assert tree.get("random_key1") is None
+    assert isinstance(tree["random_key2"], Tree)
     assert tree
 
 
@@ -20,15 +20,12 @@ def test_tree_defaults():
     "to_include, to_exclude, is_greedy, props",
     [
         (True, True, False, {}),
-        (False, True, True, {'some': 'arg', 'another': ('one',)}),
-    ]
+        (False, True, True, {"some": "arg", "another": ("one",)}),
+    ],
 )
 def test_tree_init(to_include, to_exclude, is_greedy, props):
     tree = Tree(
-        to_include=to_include,
-        to_exclude=to_exclude,
-        is_greedy=is_greedy,
-        **props
+        to_include=to_include, to_exclude=to_exclude, is_greedy=is_greedy, **props
     )
     assert tree.to_exclude == to_exclude
     assert tree.to_include == to_include
@@ -42,8 +39,8 @@ def test_tree_init(to_include, to_exclude, is_greedy, props):
     [
         Tree(key=Tree(first=Tree(another=Tree()), second=Tree())),
         Tree(key=Tree()),
-        Tree()
-    ]
+        Tree(),
+    ],
 )
 def test_to_strict_method(tree):
     def check_greed(t):
@@ -69,15 +66,11 @@ def test_to_strict_method(tree):
         (False, True, False, False),
         (False, True, True, False),
         (False, True, True, True),
-    ]
+    ],
 )
 def test_tree_apply(is_dummy, is_greedy, to_include, to_exclude):
     tree = Tree() if is_dummy else Tree(some=Tree())
-    node = Tree(
-        is_greedy=is_greedy,
-        to_exclude=to_exclude,
-        to_include=to_include
-    )
+    node = Tree(is_greedy=is_greedy, to_exclude=to_exclude, to_include=to_include)
     tree.apply(node)
 
     assert tree.is_greedy == is_greedy
@@ -87,24 +80,24 @@ def test_tree_apply(is_dummy, is_greedy, to_include, to_exclude):
 
 def test_merge_trees():
     tree1 = Tree(is_greedy=False, to_include=True)
-    node1 = tree1['key1']
+    node1 = tree1["key1"]
     node1.is_greedy = False
     node1.to_include = True
 
     tree2 = Tree(is_greedy=False, to_exclude=True)
-    node2 = tree2['key1']
+    node2 = tree2["key1"]
     node2.to_exclude = True
     node2.is_greedy = False
 
-    node3 = node2['key2']
+    node3 = node2["key2"]
     node3.to_exclude = True
     node3.is_greedy = False
 
     tree3 = Tree(is_greedy=True, to_include=True)
-    node4 = tree3['key1']
+    node4 = tree3["key1"]
     node4.to_include = True
 
-    node5 = node4['key3']
+    node5 = node4["key3"]
     node5.to_include = True
 
     merge_trees(tree1, tree2, tree3)
@@ -115,20 +108,20 @@ def test_merge_trees():
     assert tree1.to_exclude
 
     # Check the first level
-    node = tree1.get('key1')
+    node = tree1.get("key1")
     assert node
     assert not node.is_greedy
     assert node.to_include
     assert node.to_exclude
 
     # Check leaves
-    leaf = node.get('key2')
+    leaf = node.get("key2")
     assert leaf is not None
     assert not leaf.is_greedy
     assert leaf.to_exclude
     assert leaf.to_include is None
 
-    leaf = node.get('key3')
+    leaf = node.get("key3")
     assert leaf is not None
     assert leaf.is_greedy
     assert leaf.to_include

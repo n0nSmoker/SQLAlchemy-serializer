@@ -7,4 +7,4 @@ from .decimal import Decimal
 from .enum import Enum
 
 
-__all__ = ['Bytes', 'Date', 'DateTime', 'Decimal', 'Time', 'UUID', 'Enum']
+__all__ = ["Bytes", "Date", "DateTime", "Decimal", "Time", "UUID", "Enum"]
