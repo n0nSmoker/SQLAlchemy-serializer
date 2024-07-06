@@ -1,5 +1,6 @@
 # Exclude the local virtual environment directory if it's named .venv
 prune .venv
 
-# Exclude the .git directory
+# Exclude dev/test tools
 prune .git
+prune pyproject.toml
