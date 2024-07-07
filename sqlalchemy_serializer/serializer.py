@@ -181,9 +181,6 @@ class Serializer:
         Process data in a separate serializer
         :return: serialized value
         """
-        if not self.is_forkable(value):
-            return self.serialize(value)
-
         serializer = Serializer(**self.opts._asdict())
         if key is None:
             serializer.schema = self.schema
@@ -206,10 +203,15 @@ class Serializer:
         res = []
         for v in value:
             try:
-                res.append(self.fork(value=v))
+                if self.is_forkable(v):
+                    r = self.fork(value=v)
+                else:
+                    r = self.serialize(v)
             except IsNotSerializable:
                 logger.warning("Can not serialize type:%s", get_type(v))
                 continue
+
+            res.append(r)
         return res
 
     def serialize_dict(self, value: dict) -> dict:
@@ -217,7 +219,10 @@ class Serializer:
         for k, v in value.items():
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
-                res[k] = self.fork(key=k, value=v)
+                if self.is_forkable(v):
+                    res[k] = self.fork(key=k, value=v)
+                else:
+                    res[k] = self.serialize(v)
             else:
                 logger.debug("Skip key:%s of dict", k)
         return res
@@ -236,7 +241,11 @@ class Serializer:
                 logger.debug(
                     "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
                 )
-                res[k] = self.fork(key=k, value=v)
+                if self.is_forkable(v):
+                    res[k] = self.fork(key=k, value=v)
+                else:
+                    res[k] = self.serialize(v)
+
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
         return res
