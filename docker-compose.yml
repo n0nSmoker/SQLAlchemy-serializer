@@ -14,6 +14,7 @@ services:
         "poetry",
         "run",
         "pytest",
+        "-vv",
         "--pylama",
         "--cov=sqlalchemy_serializer",
         "--cov-report",
