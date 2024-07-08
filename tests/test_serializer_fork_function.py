@@ -53,6 +53,4 @@ def test_fork_logger(mocker, test_class):
     with mocker.patch.object(test_class, "schema", mocker.MagicMock()):
         test_class.fork("value")
 
-    mocked_logger.debug.assert_called_once_with(
-        "Fork serializer for type:%s", "str"
-    )
+    mocked_logger.debug.assert_called_once_with("Fork serializer for type:%s", "str")
