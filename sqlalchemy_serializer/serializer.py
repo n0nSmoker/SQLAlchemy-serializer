@@ -104,16 +104,17 @@ Options = namedtuple(
 
 
 class Serializer:
+    # Types that do nod need any serialization logic
     atomic_types = (
         int,
         str,
         float,
         bool,
         type(None),
-    )  # Types that do nod need any serialization logic
+    )
 
     def __init__(self, **kwargs):
-        self.opts = Options(**kwargs)  # Serializer o
+        self.opts = Options(**kwargs)
         self.schema = Schema()
 
         self.serialize_types = (
