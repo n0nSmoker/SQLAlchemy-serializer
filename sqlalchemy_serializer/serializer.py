@@ -37,13 +37,13 @@ class SerializerMixin:
     # Extra serialising functions
     serialize_types: tuple = ()
 
+    # Custom list of fields to serialize in this model
+    serializable_keys: tuple = ()
+
     date_format = "%Y-%m-%d"
     datetime_format = "%Y-%m-%d %H:%M:%S"
     time_format = "%H:%M"
     decimal_format = "{}"
-
-    # Custom list of fields to serialize in this model
-    serializable_keys: tuple = ()
 
     # Serialize fields of the model defined as @property automatically
     auto_serialize_properties: bool = False
@@ -114,6 +114,7 @@ class Serializer:
     )
 
     def __init__(self, **kwargs):
+        self.recursion_depth = 0
         self.opts = Options(**kwargs)
         self.schema = Schema()
 
@@ -123,9 +124,9 @@ class Serializer:
             (bytes, serializable.Bytes()),
             (uuid.UUID, serializable.UUID()),
             (
-                time,
+                time,  # Should be checked before datetime
                 serializable.Time(str_format=self.opts.time_format),
-            ),  # Should be checked before datetime
+            ),
             (
                 datetime,
                 serializable.DateTime(
@@ -152,6 +153,9 @@ class Serializer:
 
         logger.debug("Call serializer for type:%s", get_type(value))
         return self.serialize(value)
+
+    def set_recursion_depth(self, value: int):
+        self.recursion_depth = value
 
     @staticmethod
     def is_valid_callable(func) -> bool:
@@ -183,6 +187,7 @@ class Serializer:
         :return: serialized value
         """
         serializer = Serializer(**self.opts._asdict())
+        serializer.set_recursion_depth(self.recursion_depth + 1)
         if key is None:
             serializer.schema = self.schema
         else:
