@@ -37,13 +37,13 @@ class SerializerMixin:
     # Extra serialising functions
     serialize_types: tuple = ()
 
+    # Custom list of fields to serialize in this model
+    serializable_keys: tuple = ()
+
     date_format = "%Y-%m-%d"
     datetime_format = "%Y-%m-%d %H:%M:%S"
     time_format = "%H:%M"
     decimal_format = "{}"
-
-    # Custom list of fields to serialize in this model
-    serializable_keys: tuple = ()
 
     # Serialize fields of the model defined as @property automatically
     auto_serialize_properties: bool = False
