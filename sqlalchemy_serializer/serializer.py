@@ -123,9 +123,9 @@ class Serializer:
             (bytes, serializable.Bytes()),
             (uuid.UUID, serializable.UUID()),
             (
-                time,
+                time,  # Should be checked before datetime
                 serializable.Time(str_format=self.opts.time_format),
-            ),  # Should be checked before datetime
+            ),
             (
                 datetime,
                 serializable.DateTime(
