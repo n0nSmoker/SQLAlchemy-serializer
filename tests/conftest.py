@@ -5,6 +5,7 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from sqlalchemy_serializer.serializer import Serializer
 from .models import Base
 
 
@@ -12,8 +13,11 @@ logger = logging.getLogger("serializer")
 logger.setLevel(logging.DEBUG)
 
 
-DATETIME_FORMAT = "%Y-%m-%d %H:%M"
-DATE_FORMAT = "%Y-%m-%d"
+DEFAULT_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DEFAULT_DATE_FORMAT = "%Y-%m-%d"
+DEFAULT_TIME_FORMAT = "%H:%M"
+DEFAULT_DECIMAL_FORMAT = "{}"
+
 
 DB_HOST = os.environ.get("POSTGRES_HOST")
 DB_PORT = os.environ.get("POSTGRES_PORT", 5432)
@@ -54,3 +58,22 @@ def get_instance(session):
         return instance
 
     return func
+
+
+@pytest.fixture
+def serializer(
+    date_format=DEFAULT_DATE_FORMAT,
+    datetime_format=DEFAULT_DATETIME_FORMAT,
+    time_format=DEFAULT_TIME_FORMAT,
+    decimal_format=DEFAULT_DECIMAL_FORMAT,
+    tzinfo=None,
+    serialize_types=(),
+):
+    return Serializer(
+        date_format=date_format,
+        datetime_format=datetime_format,
+        time_format=time_format,
+        decimal_format=decimal_format,
+        tzinfo=tzinfo,
+        serialize_types=serialize_types,
+    )
