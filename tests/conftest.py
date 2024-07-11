@@ -60,20 +60,23 @@ def get_instance(session):
     return func
 
 
-@pytest.fixture
-def serializer(
-    date_format=DEFAULT_DATE_FORMAT,
-    datetime_format=DEFAULT_DATETIME_FORMAT,
-    time_format=DEFAULT_TIME_FORMAT,
-    decimal_format=DEFAULT_DECIMAL_FORMAT,
-    tzinfo=None,
-    serialize_types=(),
-):
-    return Serializer(
-        date_format=date_format,
-        datetime_format=datetime_format,
-        time_format=time_format,
-        decimal_format=decimal_format,
-        tzinfo=tzinfo,
-        serialize_types=serialize_types,
-    )
+@pytest.fixture()
+def get_serializer():
+    def func(
+        date_format=DEFAULT_DATE_FORMAT,
+        datetime_format=DEFAULT_DATETIME_FORMAT,
+        time_format=DEFAULT_TIME_FORMAT,
+        decimal_format=DEFAULT_DECIMAL_FORMAT,
+        tzinfo=None,
+        serialize_types=(),
+    ):
+        return Serializer(
+            date_format=date_format,
+            datetime_format=datetime_format,
+            time_format=time_format,
+            decimal_format=decimal_format,
+            tzinfo=tzinfo,
+            serialize_types=serialize_types,
+        )
+
+    return func

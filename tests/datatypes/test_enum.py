@@ -1,6 +1,5 @@
 from enum import Enum
 import pytest
-from sqlalchemy_serializer.serializer import Serializer
 
 
 @pytest.fixture
@@ -27,15 +26,16 @@ class Strings(Enum):
     BLUE = "blue"
 
 
-def test_enums(default_options):
+def test_enums(default_options, get_serializer):
+
     data = {
         "int_enum": Numbers.FIRST,
         "string_enum": Strings.RED,
         "list_enum": [Numbers.FIRST, Numbers.SECOND],
     }
 
-    instance = Serializer(**default_options)
-    result = instance(data, only=["int_enum", "string_enum", "list_enum"])
+    serializer = get_serializer(**default_options)
+    result = serializer(data, only=["int_enum", "string_enum", "list_enum"])
 
     assert result == {
         "int_enum": Numbers.FIRST.value,
