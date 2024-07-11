@@ -8,8 +8,8 @@ def test_fork_with_none_key(mocker, get_serializer):
         "sqlalchemy_serializer.serializer.Serializer.__call__", return_value=expected
     )
 
-    with mocker.patch.object(serializer, "schema", schema):
-        result = serializer.fork(value)
+    mocker.patch.object(serializer, "schema", schema)
+    result = serializer.fork(value)
 
     assert result == expected
     schema.fork.assert_not_called()
@@ -24,8 +24,8 @@ def test_fork_with_key(mocker, get_serializer):
         "sqlalchemy_serializer.serializer.Serializer.__call__", return_value=expected
     )
 
-    with mocker.patch.object(serializer, "schema", schema):
-        result = serializer.fork(value=value, key=key)
+    mocker.patch.object(serializer, "schema", schema)
+    result = serializer.fork(value=value, key=key)
 
     assert result == expected
     schema.fork.assert_called_once_with(key=key)
@@ -36,7 +36,7 @@ def test_fork_logger(mocker, get_serializer):
     mocker.patch("sqlalchemy_serializer.serializer.Serializer.__call__")
     serializer = get_serializer()
 
-    with mocker.patch.object(serializer, "schema", mocker.MagicMock()):
-        serializer.fork("value")
+    mocker.patch.object(serializer, "schema", mocker.MagicMock())
+    serializer.fork("value")
 
     mocked_logger.debug.assert_called_once_with("Fork serializer for type:%s", "str")
