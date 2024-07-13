@@ -181,19 +181,16 @@ class Serializer:
             value, (Iterable, dict, SerializerMixin)
         )
 
-    def fork(self, value, key: t.Optional[str] = None):
+    def fork(self, value, key: str):
         """
         Process data in a separate serializer
         :return: serialized value
         """
         serializer = Serializer(**self.opts._asdict())
         serializer.set_recursion_depth(self.recursion_depth + 1)
-        if key is None:
-            serializer.schema = self.schema
-        else:
-            serializer.schema = self.schema.fork(key=key)
+        serializer.schema = self.schema.fork(key=key)
 
-        logger.debug("Fork serializer for type:%s", get_type(value))
+        logger.debug("Fork serializer for type:%s key:%s", get_type(value), key)
         return serializer(value)
 
     def serialize(self, value):
@@ -209,10 +206,7 @@ class Serializer:
         res = []
         for v in value:
             try:
-                if self.is_forkable(v):
-                    r = self.fork(value=v)
-                else:
-                    r = self.serialize(v)
+                r = self.serialize(v)
             except IsNotSerializable:
                 logger.warning("Can not serialize type:%s", get_type(v))
                 continue
