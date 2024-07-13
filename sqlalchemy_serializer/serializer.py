@@ -114,7 +114,7 @@ class Serializer:
     )
 
     def __init__(self, **kwargs):
-        self.recursion_depth = 0
+        self.serialization_depth = 0
         self.opts = Options(**kwargs)
         self.schema = Schema()
 
@@ -154,8 +154,8 @@ class Serializer:
         logger.debug("Call serializer for type:%s", get_type(value))
         return self.serialize(value)
 
-    def set_recursion_depth(self, value: int):
-        self.recursion_depth = value
+    def set_serialization_depth(self, value: int):
+        self.serialization_depth = value
 
     @staticmethod
     def is_valid_callable(func) -> bool:
@@ -187,7 +187,7 @@ class Serializer:
         :return: serialized value
         """
         serializer = Serializer(**self.opts._asdict())
-        serializer.set_recursion_depth(self.recursion_depth + 1)
+        serializer.set_serialization_depth(self.serialization_depth + 1)
         serializer.schema = self.schema.fork(key=key)
 
         logger.debug("Fork serializer for type:%s key:%s", get_type(value), key)
