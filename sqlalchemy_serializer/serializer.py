@@ -52,7 +52,7 @@ class SerializerMixin:
         """
         Callback to make serializer aware of user's timezone. Should be redefined if needed
         Example:
-            return pytz.timezone('Asia/Krasnoyarsk')
+            return pytz.timezone('Africa/Abidjan')
 
         :return: datetime.tzinfo
         """
@@ -114,10 +114,32 @@ class Serializer:
     )
 
     def __init__(self, **kwargs):
-        self.serialization_depth = 0
-        self.opts = Options(**kwargs)
+        self.set_serialization_depth(0)
+        self.set_options(Options(**kwargs))
         self.schema = Schema()
 
+    def __call__(self, value, only=(), extend=()):
+        """
+        Serialization starts here
+        :param value: Value to serialize
+        :param only: Exclusive schema of serialization
+        :param extend: Rules that extend default schema
+        :return: object: JSON-compatible object
+        """
+        self.schema.update(only=only, extend=extend)
+
+        logger.debug("Call serializer for type:%s", get_type(value))
+        return self.serialize(value)
+
+    def set_serialization_depth(self, value: int):
+        self.serialization_depth = value
+
+    def set_options(self, opts: Options):
+        self.opts = opts
+        self.apply_opts()
+
+    def apply_opts(self):
+        """Apply current Options to callbacks"""
         self.serialize_types = (
             *(self.opts.serialize_types or ()),
             (self.atomic_types, lambda x: x),  # Should be checked before any other type
@@ -140,22 +162,6 @@ class Serializer:
             (Enum, serializable.Enum()),
             (SerializerMixin, self.serialize_model),
         )
-
-    def __call__(self, value, only=(), extend=()):
-        """
-        Serialization starts here
-        :param value: Value to serialize
-        :param only: Exclusive schema of serialization
-        :param extend: Rules that extend default schema
-        :return: object: JSON-compatible object
-        """
-        self.schema.update(only=only, extend=extend)
-
-        logger.debug("Call serializer for type:%s", get_type(value))
-        return self.serialize(value)
-
-    def set_serialization_depth(self, value: int):
-        self.serialization_depth = value
 
     @staticmethod
     def is_valid_callable(func) -> bool:
