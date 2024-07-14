@@ -214,7 +214,7 @@ class Serializer:
         for v in value:
             try:
                 r = self.serialize(v)
-            except IsNotSerializable:
+            except IsNotSerializable:  # FIXME: Why we swallow exception only in iterable?
                 logger.warning("Can not serialize type:%s", get_type(v))
                 continue
 
