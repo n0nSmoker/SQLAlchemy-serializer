@@ -116,6 +116,8 @@ class Serializer:
     def __init__(self, **kwargs):
         self.set_serialization_depth(0)
         self.set_options(Options(**kwargs))
+        self.init_callbacks()
+
         self.schema = Schema()
 
     def __call__(self, value, only=(), extend=()):
@@ -136,10 +138,9 @@ class Serializer:
 
     def set_options(self, opts: Options):
         self.opts = opts
-        self.apply_opts()
 
-    def apply_opts(self):
-        """Apply current Options to callbacks"""
+    def init_callbacks(self):
+        """Initialize callbacks"""
         self.serialize_types = (
             *(self.opts.serialize_types or ()),
             (self.atomic_types, lambda x: x),  # Should be checked before any other type
@@ -187,17 +188,17 @@ class Serializer:
             value, (Iterable, dict, SerializerMixin)
         )
 
-    def fork(self, value, key: str):
+    def fork(self, key: str) -> "Serializer":
         """
-        Process data in a separate serializer
+        Return new serializer for a key
         :return: serialized value
         """
         serializer = Serializer(**self.opts._asdict())
         serializer.set_serialization_depth(self.serialization_depth + 1)
         serializer.schema = self.schema.fork(key=key)
 
-        logger.debug("Fork serializer for type:%s key:%s", get_type(value), key)
-        return serializer(value)
+        logger.debug("Fork serializer for key:%s", key)
+        return serializer
 
     def serialize(self, value):
         if self.is_valid_callable(value):
@@ -225,10 +226,12 @@ class Serializer:
         for k, v in value.items():
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
+
+                serializer = self
                 if self.is_forkable(v):
-                    res[k] = self.fork(key=k, value=v)
-                else:
-                    res[k] = self.serialize(v)
+                    serializer = self.fork(key=k)
+
+                res[k] = serializer.serialize(v)
             else:
                 logger.debug("Skip key:%s of dict", k)
         return res
@@ -247,10 +250,12 @@ class Serializer:
                 logger.debug(
                     "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
                 )
+
+                serializer = self
                 if self.is_forkable(v):
-                    res[k] = self.fork(key=k, value=v)
-                else:
-                    res[k] = self.serialize(v)
+                    serializer = self.fork(key=k)
+
+                res[k] = serializer.serialize(v)
 
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
