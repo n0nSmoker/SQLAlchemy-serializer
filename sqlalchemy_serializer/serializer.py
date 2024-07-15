@@ -209,12 +209,23 @@ class Serializer:
                 return callback(value)
         raise IsNotSerializable(f"Unserializable type:{type(value)} value:{value}")
 
+    def serialize_with_fork(self, value, key):
+        # TODO: merge  this  function with the serialize function
+        # TODO: this should be performed after is_valid_callable check
+        serializer = self
+        if self.is_forkable(value):
+            serializer = self.fork(key=key)
+
+        return serializer.serialize(value)
+
     def serialize_iter(self, value: Iterable) -> list:
         res = []
         for v in value:
             try:
                 r = self.serialize(v)
-            except IsNotSerializable:  # FIXME: Why we swallow exception only in iterable?
+            except (
+                IsNotSerializable
+            ):  # FIXME: Why we swallow exception only in iterable?
                 logger.warning("Can not serialize type:%s", get_type(v))
                 continue
 
@@ -227,11 +238,7 @@ class Serializer:
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
 
-                serializer = self
-                if self.is_forkable(v):
-                    serializer = self.fork(key=k)
-
-                res[k] = serializer.serialize(v)
+                res[k] = self.serialize_with_fork(value=v, key=k)
             else:
                 logger.debug("Skip key:%s of dict", k)
         return res
@@ -250,12 +257,7 @@ class Serializer:
                 logger.debug(
                     "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
                 )
-
-                serializer = self
-                if self.is_forkable(v):
-                    serializer = self.fork(key=k)
-
-                res[k] = serializer.serialize(v)
+                res[k] = self.serialize_with_fork(value=v, key=k)
 
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
