@@ -203,11 +203,12 @@ class Serializer:
     def serialize(self, value):
         if self.is_valid_callable(value):
             value = value()
+            logger.debug("Process callable resulting type:%s", get_type(value))
 
         for types, callback in self.serialize_types:
             if isinstance(value, types):
                 return callback(value)
-        raise IsNotSerializable(f"Unserializable type:{type(value)} value:{value}")
+        raise IsNotSerializable(f"Unserializable type:{get_type(value)} value:{value}")
 
     def serialize_with_fork(self, value, key):
         # TODO: merge  this  function with the serialize function
@@ -255,7 +256,10 @@ class Serializer:
             if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
                 v = getattr(value, k)
                 logger.debug(
-                    "Serialize key:%s type:%s of model:%s", k, get_type(v), get_type(value)
+                    "Serialize key:%s type:%s of model:%s",
+                    k,
+                    get_type(v),
+                    get_type(value),
                 )
                 res[k] = self.serialize_with_fork(value=v, key=k)
 
