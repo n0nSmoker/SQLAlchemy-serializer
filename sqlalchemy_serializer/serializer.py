@@ -255,7 +255,7 @@ class Serializer:
             if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
                 v = getattr(value, k)
                 logger.debug(
-                    "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
+                    "Serialize key:%s type:%s of model:%s", k, get_type(v), get_type(value)
                 )
                 res[k] = self.serialize_with_fork(value=v, key=k)
 
