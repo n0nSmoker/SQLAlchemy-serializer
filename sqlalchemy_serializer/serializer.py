@@ -191,7 +191,7 @@ class Serializer:
     def fork(self, key: str) -> "Serializer":
         """
         Return new serializer for a key
-        :return: serialized value
+        :return: serializer
         """
         serializer = Serializer(**self.opts._asdict())
         serializer.set_serialization_depth(self.serialization_depth + 1)
@@ -200,23 +200,47 @@ class Serializer:
         logger.debug("Fork serializer for key:%s", key)
         return serializer
 
-    def serialize(self, value):
+    def serialize(self, value, **kwargs):
+        """
+        Orchestrates the serialization process.
+
+        Args:
+            value: The value to be serialized.
+            **kwargs: Only to ensure that no key is passed
+                        since None and Ellipsis are valid keys.
+
+        Returns:
+            The serialized value.
+        """
         if self.is_valid_callable(value):
             value = value()
+            logger.debug("Process callable resulting type:%s", get_type(value))
 
+        if kwargs:
+            if "key" in kwargs:
+                # since None and ... are valid keys
+                return self.serialize_with_fork(value=value, key=kwargs["key"])
+            raise ValueError("Malformed structure of kwargs. Only `key` accepted")
+
+        return self.apply_callback(value=value)
+
+    def apply_callback(self, value):
+        """
+        Apply a proper callback to serialize the value
+        :return: serialized value
+        :raises: IsNotSerializable
+        """
         for types, callback in self.serialize_types:
             if isinstance(value, types):
                 return callback(value)
-        raise IsNotSerializable(f"Unserializable type:{type(value)} value:{value}")
+        raise IsNotSerializable(f"Unserializable type:{get_type(value)} value:{value}")
 
     def serialize_with_fork(self, value, key):
-        # TODO: merge  this  function with the serialize function
-        # TODO: this should be performed after is_valid_callable check
         serializer = self
         if self.is_forkable(value):
             serializer = self.fork(key=key)
 
-        return serializer.serialize(value)
+        return serializer.apply_callback(value)
 
     def serialize_iter(self, value: Iterable) -> list:
         res = []
@@ -238,7 +262,7 @@ class Serializer:
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
 
-                res[k] = self.serialize_with_fork(value=v, key=k)
+                res[k] = self.serialize(value=v, key=k)
             else:
                 logger.debug("Skip key:%s of dict", k)
         return res
@@ -255,9 +279,12 @@ class Serializer:
             if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
                 v = getattr(value, k)
                 logger.debug(
-                    "Serialize key:%s type:%s model:%s", k, get_type(v), get_type(value)
+                    "Serialize key:%s type:%s of model:%s",
+                    k,
+                    get_type(v),
+                    get_type(value),
                 )
-                res[k] = self.serialize_with_fork(value=v, key=k)
+                res[k] = self.serialize(value=v, key=k)
 
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
