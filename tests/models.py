@@ -33,7 +33,7 @@ class FlatModel(Base, SerializerMixin):
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
     null = sa.Column(sa.String)
-    uuid = sa.Column(UUID(as_uuid=True), default=lambda: uuid4())
+    uuid = sa.Column(UUID(as_uuid=True), default=uuid4)
     list = [1, "test_string", 0.9, {"key": 123, "key2": 23423}, {"key": 234}]
     set = {1, 2, "test_string"}
     dict = dict(key=123, key2={"key": 12})
