@@ -46,7 +46,11 @@ class SerializerMixin:
     decimal_format = "{}"
 
     # Serialize fields of the model defined as @property automatically
+    # TODO: Add this to the README file
     auto_serialize_properties: bool = False
+
+    # Skip None values
+    skip_none_values: bool = False
 
     def get_tzinfo(self):
         """
@@ -68,6 +72,7 @@ class SerializerMixin:
         tzinfo=None,
         decimal_format=None,
         serialize_types=None,
+        skip_none_values=None,
     ):
         """
         Returns SQLAlchemy model's data in JSON compatible format
@@ -93,13 +98,15 @@ class SerializerMixin:
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types,
+            skip_none_values=skip_none_values or self.skip_none_values,
         )
         return s(self, only=only, extend=rules)
 
 
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types",
+    "date_format datetime_format time_format "
+    "decimal_format tzinfo serialize_types skip_none_values",
 )
 
 

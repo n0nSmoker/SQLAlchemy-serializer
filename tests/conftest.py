@@ -69,6 +69,7 @@ def get_serializer():
         decimal_format=DEFAULT_DECIMAL_FORMAT,
         tzinfo=None,
         serialize_types=(),
+        skip_none_values=None,
     ):
         return Serializer(
             date_format=date_format,
@@ -77,6 +78,7 @@ def get_serializer():
             decimal_format=decimal_format,
             tzinfo=tzinfo,
             serialize_types=serialize_types,
+            skip_none_values=skip_none_values,
         )
 
     return func

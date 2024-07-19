@@ -11,6 +11,7 @@ def default_options():
         decimal_format="%.2f",
         tzinfo=None,
         serialize_types=None,
+        skip_none_values=None,
     )
 
 
