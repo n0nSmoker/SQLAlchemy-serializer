@@ -123,7 +123,7 @@ class Serializer:
         Return new serializer for a key
         :return: serializer
         """
-        serializer = Serializer(**self.opts._asdict())
+        serializer = self.__class__(**self.opts._asdict())
         serializer.set_serialization_depth(self.serialization_depth + 1)
         serializer.schema = self.schema.fork(key=key)
 
@@ -233,6 +233,9 @@ class SerializerMixin:
     some extra serialization logic
     """
 
+    # Default Serializer class
+    serialize_class: Serializer = Serializer
+
     # Default exclusive schema.
     # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
     serialize_only: tuple = ()
@@ -292,7 +295,7 @@ class SerializerMixin:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :return: data: dict
         """
-        s = Serializer(
+        s = self.serialize_class(
             date_format=date_format or self.date_format,
             datetime_format=datetime_format or self.datetime_format,
             time_format=time_format or self.time_format,

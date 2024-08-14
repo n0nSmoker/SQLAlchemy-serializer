@@ -11,6 +11,7 @@ this mixin definitely suits you.
 - [Advanced usage](#Advanced-usage)
 - [Custom formats](#Custom-formats)
 - [Custom types](#Custom-types)
+- [Custom Serializer](#Custom-serializer)
 - [Timezones](#Timezones)
 - [Troubleshooting](#Troubleshooting)
 - [Tests](#Tests)
@@ -302,6 +303,27 @@ class Point(Base, SerializerMixin):
 
 Unfortunately you can not access formats or tzinfo in that functions.
 I'll implement this logic later if any of users needs it.
+
+
+# Custom Serializer
+To have full control over the Serializer, you can define your own subclass with custom logic, and then configure the mixin to use it.
+```python
+from sqlalchemy_serializer import Serializer, SerializerMixin
+
+
+class CustomSerializer(Serializer):
+
+    def serialize_model(self, value) -> dict:
+        """Custom override adding special case for a complex model."""
+        if isinstance(value, ComplexModel):
+            return complex_logic(value)
+        return super().serialize_model(value)
+
+
+class CustomSerializerMixin(SerializerMixin):
+
+    serialize_class = CustomSerializer
+```
 
 
 # Timezones
