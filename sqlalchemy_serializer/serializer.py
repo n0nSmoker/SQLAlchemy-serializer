@@ -19,88 +19,18 @@ logger = logging.getLogger("serializer")
 logger.setLevel(level="WARN")
 
 
-class SerializerMixin:
-    """
-    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
-    with no pain
-    It can be inherited to redefine get_tzinfo callback, datetime formats or to add
-    some extra serialization logic
-    """
-
-    # Default exclusive schema.
-    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
-    serialize_only: tuple = ()
-
-    # Additions to default schema. Can include negative rules
-    serialize_rules: tuple = ()
-
-    # Extra serialising functions
-    serialize_types: tuple = ()
-
-    # Custom list of fields to serialize in this model
-    serializable_keys: tuple = ()
-
-    date_format = "%Y-%m-%d"
-    datetime_format = "%Y-%m-%d %H:%M:%S"
-    time_format = "%H:%M"
-    decimal_format = "{}"
-
-    # Serialize fields of the model defined as @property automatically
-    auto_serialize_properties: bool = False
-
-    def get_tzinfo(self):
-        """
-        Callback to make serializer aware of user's timezone. Should be redefined if needed
-        Example:
-            return pytz.timezone('Africa/Abidjan')
-
-        :return: datetime.tzinfo
-        """
-        return None
-
-    def to_dict(
-        self,
-        only=(),
-        rules=(),
-        date_format=None,
-        datetime_format=None,
-        time_format=None,
-        tzinfo=None,
-        decimal_format=None,
-        serialize_types=None,
-    ):
-        """
-        Returns SQLAlchemy model's data in JSON compatible format
-
-        For details about datetime formats follow:
-        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
-
-        :param only: exclusive schema to replace the default one
-            always have higher priority than rules
-        :param rules: schema to extend default one or schema defined in "only"
-        :param date_format: str
-        :param datetime_format: str
-        :param time_format: str
-        :param decimal_format: str
-        :param serialize_types:
-        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
-        :return: data: dict
-        """
-        s = Serializer(
-            date_format=date_format or self.date_format,
-            datetime_format=datetime_format or self.datetime_format,
-            time_format=time_format or self.time_format,
-            decimal_format=decimal_format or self.decimal_format,
-            tzinfo=tzinfo or self.get_tzinfo(),
-            serialize_types=serialize_types or self.serialize_types,
-        )
-        return s(self, only=only, extend=rules)
-
-
 Options = namedtuple(
     "Options",
     "date_format datetime_format time_format decimal_format tzinfo serialize_types",
 )
+
+
+class IsNotSerializable(Exception):
+    pass
+
+
+def get_type(value) -> str:
+    return type(value).__name__
 
 
 class Serializer:
@@ -291,13 +221,83 @@ class Serializer:
         return res
 
 
-class IsNotSerializable(Exception):
-    pass
-
-
-def get_type(value) -> str:
-    return type(value).__name__
-
-
 def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
     return [item.to_dict(*args, **kwargs) for item in iterable]
+
+
+class SerializerMixin:
+    """
+    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
+    with no pain
+    It can be inherited to redefine get_tzinfo callback, datetime formats or to add
+    some extra serialization logic
+    """
+
+    # Default exclusive schema.
+    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
+    serialize_only: tuple = ()
+
+    # Additions to default schema. Can include negative rules
+    serialize_rules: tuple = ()
+
+    # Extra serialising functions
+    serialize_types: tuple = ()
+
+    # Custom list of fields to serialize in this model
+    serializable_keys: tuple = ()
+
+    date_format = "%Y-%m-%d"
+    datetime_format = "%Y-%m-%d %H:%M:%S"
+    time_format = "%H:%M"
+    decimal_format = "{}"
+
+    # Serialize fields of the model defined as @property automatically
+    auto_serialize_properties: bool = False
+
+    def get_tzinfo(self):
+        """
+        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        Example:
+            return pytz.timezone('Africa/Abidjan')
+
+        :return: datetime.tzinfo
+        """
+        return None
+
+    def to_dict(
+        self,
+        only=(),
+        rules=(),
+        date_format=None,
+        datetime_format=None,
+        time_format=None,
+        tzinfo=None,
+        decimal_format=None,
+        serialize_types=None,
+    ):
+        """
+        Returns SQLAlchemy model's data in JSON compatible format
+
+        For details about datetime formats follow:
+        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
+        :param only: exclusive schema to replace the default one
+            always have higher priority than rules
+        :param rules: schema to extend default one or schema defined in "only"
+        :param date_format: str
+        :param datetime_format: str
+        :param time_format: str
+        :param decimal_format: str
+        :param serialize_types:
+        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :return: data: dict
+        """
+        s = Serializer(
+            date_format=date_format or self.date_format,
+            datetime_format=datetime_format or self.datetime_format,
+            time_format=time_format or self.time_format,
+            decimal_format=decimal_format or self.decimal_format,
+            tzinfo=tzinfo or self.get_tzinfo(),
+            serialize_types=serialize_types or self.serialize_types,
+        )
+        return s(self, only=only, extend=rules)
