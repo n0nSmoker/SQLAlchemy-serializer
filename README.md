@@ -187,6 +187,42 @@ item.to_dict('-children.children')
 In this case only the first level of `children` will be included
 See [Max recursion](#Max-recursion)
 
+Alternatively you can pass the `max_depth` kwarg, which allows to control recursion in general without having to explicitly list each attribute you don't want recursed.  
+Please note that this check is performed at the beginning of `serialize_model()`, which means every other nested Iterable is *not affected* by this setting.  
+The default value returned when recursion is no longer permitted is a string in the form `tablename.id` (e.g. `users.123`), with fallback to `repr(item)` in case the `id` attribute is not available for the model.  
+This option can be disabled using `max_depth=-1`, which is also the default.  
+```python
+# Stop recursion at top level, meaning all relationships will be "dropped"
+# For example:
+#  item = User(id=123, name="john", articles=[Article(id=10), Article(id=11)])
+# will be serialized to
+#  {
+#    "id": 123, "name": "john",
+#    "articles": ["articles.10", "articles.11"]
+#  }
+item.to_dict(max_depth=0)
+
+# Stop at first level, meaning only the first children will be processed
+# For example, the same user above will be serialized to:
+#  {
+#    "id": 123, "name": "john",
+#    "articles": [
+#      {"id": 10, "title": ...},
+#      {"id": 11, "title": ...},
+#    ]
+#  }
+item.to_dict(max_depth=1)
+```
+The `max_depth` option can be also configured at mixin level, setting the `serialize_max_depth` class attribute which avoids passing it to each `to_dict` call.
+```python
+# Set max_depth option in mixin
+class SomeModel(db.Model, SerializerMixin):
+  serialize_max_depth = 0
+
+# Call to_dict without max_depth arg
+item.to_dict()
+```
+
 # Custom formats
 If you want to change datetime/date/time/decimal format in one model you can specify it like below:
 ```python

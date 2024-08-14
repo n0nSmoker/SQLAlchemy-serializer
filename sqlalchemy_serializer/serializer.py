@@ -21,7 +21,7 @@ logger.setLevel(level="WARN")
 
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types",
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types max_depth",
 )
 
 
@@ -197,7 +197,12 @@ class Serializer:
                 logger.debug("Skip key:%s of dict", k)
         return res
 
-    def serialize_model(self, value) -> dict:
+    def serialize_model(self, value) -> t.Any:
+        # Check if user set a recursion limit and we can no longer recurse
+        if self.serialization_depth > self.opts.max_depth > -1:
+            # Return early calling internal helper
+            return self.serialize_model_fallback(value)
+
         self.schema.update(only=value.serialize_only, extend=value.serialize_rules)
 
         res = {}
@@ -219,6 +224,19 @@ class Serializer:
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
         return res
+
+    def serialize_model_fallback(self, value) -> t.Any:
+        """
+        Called when serialization can no longer recurse.
+        Default output is a string like "tablename.id", e.g. "users.123", if attributes
+        are not available it will return "repr(value)".
+        Override this method to implement own logic.
+        :return: str
+        """
+        try:
+            return f'{value.__tablename__}.{value.id}'
+        except AttributeError:
+            return repr(value)
 
 
 def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
@@ -254,6 +272,9 @@ class SerializerMixin:
     time_format = "%H:%M"
     decimal_format = "{}"
 
+    # Maximum recursion depth, setting to "-1" disables logic
+    serialize_max_depth: int = -1
+
     # Serialize fields of the model defined as @property automatically
     auto_serialize_properties: bool = False
 
@@ -277,6 +298,7 @@ class SerializerMixin:
         tzinfo=None,
         decimal_format=None,
         serialize_types=None,
+        max_depth=None
     ):
         """
         Returns SQLAlchemy model's data in JSON compatible format
@@ -293,6 +315,7 @@ class SerializerMixin:
         :param decimal_format: str
         :param serialize_types:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :param max_depth: int maximum recursion depth allowed, "-1" disables logic
         :return: data: dict
         """
         s = self.serialize_class(
@@ -302,5 +325,6 @@ class SerializerMixin:
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types,
+            max_depth=max_depth if max_depth is not None else self.serialize_max_depth,
         )
         return s(self, only=only, extend=rules)
