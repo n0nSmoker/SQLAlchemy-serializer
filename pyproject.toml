@@ -19,19 +19,19 @@ keywords = ["sqlalchemy", "serialize", "to_dict", "JSON"]
 repository = "https://github.com/n0nSmoker/SQLAlchemy-serializer"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-SQLAlchemy = "2.0.30"
-psycopg2-binary = "2.9.10"
-pytz = "^2024.1"
-setuptools = "^70.1.1"
+python = "*"
+SQLAlchemy = "*"
+psycopg2-binary = "*"
+pytz = "*"
+setuptools = "*"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "8.1.1"
-pytest-cov = "5.0.0"
-pylama = "8.4.1"
-requests = "2.32.3"
-black = "^24.4.2"
-pytest-mock = "^3.14.0"
+pytest = "*"
+pytest-cov = "*"
+pylama = "*"
+requests = "*"
+black = "*"
+pytest-mock = "*"
 
 [build-system]
 requires = ["poetry-core"]
