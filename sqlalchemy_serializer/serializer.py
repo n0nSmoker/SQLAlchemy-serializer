@@ -19,88 +19,18 @@ logger = logging.getLogger("serializer")
 logger.setLevel(level="WARN")
 
 
-class SerializerMixin:
-    """
-    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
-    with no pain
-    It can be inherited to redefine get_tzinfo callback, datetime formats or to add
-    some extra serialization logic
-    """
-
-    # Default exclusive schema.
-    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
-    serialize_only: tuple = ()
-
-    # Additions to default schema. Can include negative rules
-    serialize_rules: tuple = ()
-
-    # Extra serialising functions
-    serialize_types: tuple = ()
-
-    # Custom list of fields to serialize in this model
-    serializable_keys: tuple = ()
-
-    date_format = "%Y-%m-%d"
-    datetime_format = "%Y-%m-%d %H:%M:%S"
-    time_format = "%H:%M"
-    decimal_format = "{}"
-
-    # Serialize fields of the model defined as @property automatically
-    auto_serialize_properties: bool = False
-
-    def get_tzinfo(self):
-        """
-        Callback to make serializer aware of user's timezone. Should be redefined if needed
-        Example:
-            return pytz.timezone('Africa/Abidjan')
-
-        :return: datetime.tzinfo
-        """
-        return None
-
-    def to_dict(
-        self,
-        only=(),
-        rules=(),
-        date_format=None,
-        datetime_format=None,
-        time_format=None,
-        tzinfo=None,
-        decimal_format=None,
-        serialize_types=None,
-    ):
-        """
-        Returns SQLAlchemy model's data in JSON compatible format
-
-        For details about datetime formats follow:
-        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
-
-        :param only: exclusive schema to replace the default one
-            always have higher priority than rules
-        :param rules: schema to extend default one or schema defined in "only"
-        :param date_format: str
-        :param datetime_format: str
-        :param time_format: str
-        :param decimal_format: str
-        :param serialize_types:
-        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
-        :return: data: dict
-        """
-        s = Serializer(
-            date_format=date_format or self.date_format,
-            datetime_format=datetime_format or self.datetime_format,
-            time_format=time_format or self.time_format,
-            decimal_format=decimal_format or self.decimal_format,
-            tzinfo=tzinfo or self.get_tzinfo(),
-            serialize_types=serialize_types or self.serialize_types,
-        )
-        return s(self, only=only, extend=rules)
-
-
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types",
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types max_depth",
 )
+
+
+class IsNotSerializable(Exception):
+    pass
+
+
+def get_type(value) -> str:
+    return type(value).__name__
 
 
 class Serializer:
@@ -193,7 +123,7 @@ class Serializer:
         Return new serializer for a key
         :return: serializer
         """
-        serializer = Serializer(**self.opts._asdict())
+        serializer = self.__class__(**self.opts._asdict())
         serializer.set_serialization_depth(self.serialization_depth + 1)
         serializer.schema = self.schema.fork(key=key)
 
@@ -267,7 +197,12 @@ class Serializer:
                 logger.debug("Skip key:%s of dict", k)
         return res
 
-    def serialize_model(self, value) -> dict:
+    def serialize_model(self, value) -> t.Any:
+        # Check if user set a recursion limit and we can no longer recurse
+        if self.serialization_depth > self.opts.max_depth > -1:
+            # Return early calling internal helper
+            return self.serialize_model_fallback(value)
+
         self.schema.update(only=value.serialize_only, extend=value.serialize_rules)
 
         res = {}
@@ -290,14 +225,106 @@ class Serializer:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
         return res
 
-
-class IsNotSerializable(Exception):
-    pass
-
-
-def get_type(value) -> str:
-    return type(value).__name__
+    def serialize_model_fallback(self, value) -> t.Any:
+        """
+        Called when serialization can no longer recurse.
+        Default output is a string like "tablename.id", e.g. "users.123", if attributes
+        are not available it will return "repr(value)".
+        Override this method to implement own logic.
+        :return: str
+        """
+        try:
+            return f'{value.__tablename__}.{value.id}'
+        except AttributeError:
+            return repr(value)
 
 
 def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
     return [item.to_dict(*args, **kwargs) for item in iterable]
+
+
+class SerializerMixin:
+    """
+    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
+    with no pain
+    It can be inherited to redefine get_tzinfo callback, datetime formats or to add
+    some extra serialization logic
+    """
+
+    # Default Serializer class
+    serialize_class: Serializer = Serializer
+
+    # Default exclusive schema.
+    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
+    serialize_only: tuple = ()
+
+    # Additions to default schema. Can include negative rules
+    serialize_rules: tuple = ()
+
+    # Extra serialising functions
+    serialize_types: tuple = ()
+
+    # Custom list of fields to serialize in this model
+    serializable_keys: tuple = ()
+
+    date_format = "%Y-%m-%d"
+    datetime_format = "%Y-%m-%d %H:%M:%S"
+    time_format = "%H:%M"
+    decimal_format = "{}"
+
+    # Maximum recursion depth, setting to "-1" disables logic
+    serialize_max_depth: int = -1
+
+    # Serialize fields of the model defined as @property automatically
+    auto_serialize_properties: bool = False
+
+    def get_tzinfo(self):
+        """
+        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        Example:
+            return pytz.timezone('Africa/Abidjan')
+
+        :return: datetime.tzinfo
+        """
+        return None
+
+    def to_dict(
+        self,
+        only=(),
+        rules=(),
+        date_format=None,
+        datetime_format=None,
+        time_format=None,
+        tzinfo=None,
+        decimal_format=None,
+        serialize_types=None,
+        max_depth=None
+    ):
+        """
+        Returns SQLAlchemy model's data in JSON compatible format
+
+        For details about datetime formats follow:
+        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
+        :param only: exclusive schema to replace the default one
+            always have higher priority than rules
+        :param rules: schema to extend default one or schema defined in "only"
+        :param date_format: str
+        :param datetime_format: str
+        :param time_format: str
+        :param decimal_format: str
+        :param serialize_types:
+        :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :param max_depth: int maximum recursion depth allowed, "-1" disables logic
+        :return: data: dict
+        """
+        s = self.serialize_class(
+            date_format=date_format or self.date_format,
+            datetime_format=datetime_format or self.datetime_format,
+            time_format=time_format or self.time_format,
+            decimal_format=decimal_format or self.decimal_format,
+            tzinfo=tzinfo or self.get_tzinfo(),
+            serialize_types=serialize_types or self.serialize_types,
+            max_depth=max_depth if max_depth is not None else self.serialize_max_depth,
+        )
+        return s(self, only=only, extend=rules)
