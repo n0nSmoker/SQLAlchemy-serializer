@@ -1,0 +1,151 @@
+# Cursor Rules for SQLAlchemy-serializer
+
+## Project Context
+This is a SQLAlchemy serialization library that provides a mixin for easy model serialization.
+
+**Project Structure:**
+- Main package: `sqlalchemy_serializer/`
+- Core: `serializer.py` (SerializerMixin, Serializer classes)
+- Library: `lib/schema.py` (Schema/Tree/Rule), `lib/fields.py` (field extraction), `lib/serializable/` (type serializers)
+- Tests: `tests/` directory mirrors source structure
+
+## Core Development Principles
+
+**Code Quality & Standards**
+
+Python code must follow PEP 8 strictly. Use type hints on all functions and class methods. Prefer explicit over implicit. Enforce minimal complexity—keep functions under 20 lines when feasible. Use descriptive variable names that reflect intent.
+
+**Architecture Principles**
+- Beautiful is better than ugly
+- Explicit is better than implicit
+- Simple is better than complex
+- Complex is better than complicated
+- Flat is better than nested
+- Sparse is better than dense
+- Keep functions small and elegant
+- Readability counts
+
+**Testing Requirements**
+
+Write tests before or immediately after implementation. Use pytest for unit tests and pytest-cov for coverage tracking. Maintain minimum 80% code coverage on all modules. Test both success and failure paths. Mock external dependencies consistently.
+
+**Project Testing Setup:**
+- Run tests: `make test` (uses docker-compose)
+- Run specific test: `make test file=tests/path/to/test.py`
+- Test configuration: `pytest.ini_options` in `pyproject.toml` (verbose, color, log_cli)
+- Coverage: `--cov=sqlalchemy_serializer --cov-report term-missing`
+- Database: PostgreSQL container via docker-compose (session-scoped fixture)
+- Test models: Defined in `tests/models.py` (FlatModel, NestedModel, RecursiveModel, CustomSerializerModel)
+
+## Project-Specific Rules
+
+**File Organization**
+
+Keep modules focused—one responsibility per file. Create a `tests/` directory mirroring source structure. Store configuration in environment variables or dedicated config modules. Never commit `.env` files or secrets.
+
+**Project Structure:**
+- `sqlalchemy_serializer/serializer.py` - Core SerializerMixin and Serializer classes
+- `sqlalchemy_serializer/lib/schema.py` - Schema tree for rule handling (greedy/strict modes)
+- `sqlalchemy_serializer/lib/fields.py` - Field extraction utilities (SQL fields, properties)
+- `sqlalchemy_serializer/lib/serializable/` - Type-specific serializers (datetime, date, time, decimal, enum, uuid, bytes)
+- Each serializable type has its own module following the Base class pattern
+
+**Dependencies & Imports**
+
+Pin exact versions in `pyproject.toml`. Use virtual environments exclusively—no global installs. Review dependency licenses. Import standard library first, then third-party, then local modules. Remove unused imports automatically.
+
+**Error Handling & Logging**
+
+Never use bare `except:`. Log at appropriate levels (DEBUG, INFO, WARNING, ERROR). Include context in error messages. Use custom exceptions for domain-specific errors. Validate inputs at function entry points.
+
+**Project-Specific:**
+- Logger: `logging.getLogger("serializer")` with WARN level by default
+- Custom exception: `IsNotSerializable` for unserializable types
+- Iterable serialization swallows `IsNotSerializable` exceptions (see FIXME in code)
+- Use debug logging for serialization flow: `logger.debug("Serialize key:%s type:%s", ...)`
+
+## Code Practices
+
+**Performance & Maintenance**
+
+Avoid mutable default arguments. Use generators for large datasets. Prefer built-in functions over loops. Document non-obvious logic inline. Keep functions pure when possible. Use pathlib for file operations instead of os.path.
+
+**Database & Queries**
+
+Use parameterized queries exclusively—no string concatenation. Leverage ORM features (SQLAlchemy) for common operations. Index frequently-queried columns. Document query intent with comments. Use database transactions appropriately.
+
+**SQLAlchemy-Specific:**
+- Use `sqlalchemy.inspect()` for model introspection (get mapper attributes)
+- Access model fields via `getattr(model, key)` after validation
+- Support SQLAlchemy 2.0+ patterns (declarative_base, relationship)
+- Handle relationships automatically through SerializerMixin
+- Test models use PostgreSQL with docker-compose for integration testing
+
+**AI Assistance Configuration**
+
+Provide complete file context using `@` mentions before multi-file refactors. Keep conversations focused—start fresh if conversation exceeds 15 exchanges. Use Agent mode for complex multi-step changes. Reference commit history for reverting problematic changes quickly.
+
+## Workflow Rules
+
+**Version Control**
+
+Make atomic commits with clear messages. Keep working directory clean—commit before AI changes. Use branches for features and fixes. Squash commits before merging. Document rationale in PR descriptions, not just code.
+
+**Review & Validation**
+
+Review all AI-generated code—especially complex logic and security-sensitive code. Run full test suite locally before pushing. Use linting tools (ruff, pylint) on every change. Verify imports resolve correctly. Check for accidental debugging code or temporary variables.
+
+## Common Patterns
+
+**Serializer Architecture:**
+- Callback chain pattern: `serialize_types` tuple checked in order (most specific first)
+- Fork pattern: Create new Serializer instances for nested structures (dicts, iterables, models)
+- Schema tree: Tree structure for nested rule handling with greedy/strict modes
+- Options pattern: Use `namedtuple` (Options) for configuration passing
+
+**Type Serialization:**
+- All serializable types inherit from `lib.serializable.base.Base`
+- Implement `__call__` method that takes value and returns serialized form
+- Order matters: atomic types first, then specific types (time before datetime), then generic (dict before Iterable)
+- Custom types: Add to `serialize_types` tuple as `(Type, callable)` pairs
+
+**Schema & Rules:**
+- Greedy mode (default): Include all fields unless excluded
+- Strict mode (`serialize_only`): Include only specified fields
+- Nested rules: Use dot notation (`'relation.field'`)
+- Negative rules: Prefix with `-` (`'-field'`, `'-relation.field'`)
+- Schema forks for nested structures maintain parent context
+
+**Model Mixin:**
+- `SerializerMixin` adds `to_dict()` method to SQLAlchemy models
+- Class attributes: `serialize_only`, `serialize_rules`, `serialize_types`, `serializable_keys`
+- Format attributes: `date_format`, `datetime_format`, `time_format`, `decimal_format`
+- Override `get_tzinfo()` for timezone-aware serialization
+- Set `auto_serialize_properties=True` to include `@property` fields automatically
+
+**Testing Patterns:**
+- Use `conftest.py` fixtures: `session` (database), `get_instance`, `get_serializer`
+- Test files mirror source structure: `test_*.py` for modules, `test_*_function.py` for specific functions
+- Integration tests use PostgreSQL via docker-compose
+- Test both greedy and strict modes, nested structures, recursive models
+- Never delete or change already committed tests. Treat old tests like immutable legacy.
+
+## Known Issues & Workarounds
+
+**Known Issues:**
+1. Iterable serialization swallows `IsNotSerializable` exceptions (see FIXME in `serialize_iter`)
+2. Schema checks can be optimized: TODO comments about skipping checks when not greedy
+3. Custom serializers cannot access format or tzinfo (documented limitation in README)
+
+**Common Pitfalls:**
+- One-element tuples must have trailing comma: `serialize_only = ('field',)` not `('field')`
+- Recursive models need explicit exclusion rules to prevent max recursion: `serialize_rules = ('-relation.backref',)`
+- Controversial rules: `('-prop', 'prop.id')` will include `prop` despite negative rule
+- Negative rules in `serialize_only`: `serialize_only = ('-model.id',)` returns nothing (must include parent: `('model', '-model.id')`)
+
+**Performance Considerations:**
+- `get_serializable_keys` uses `@functools.lru_cache` for field name caching
+- Schema tree operations are O(n) where n is rule depth
+- Fork creates new Serializer instances (intentional for isolation)
+- Type checking uses `isinstance()` with tuple of types for efficiency
+
