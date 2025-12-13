@@ -1,5 +1,6 @@
 dist
 env
+.env
 
 .idea
 __MACOSX

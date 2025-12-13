@@ -45,8 +45,11 @@ build-backend = "setuptools.build_meta"
 include-package-data = true
 
 [tool.pytest.ini_options]
-addopts = "-xvrs --color=yes"
+addopts = "-xvrs --color=yes -m 'not pypi'"
 log_cli = true
+markers = [
+    "pypi: marks tests that require PyPI access (deselect with -m 'not pypi')",
+]
 
 
 [tool.ruff]

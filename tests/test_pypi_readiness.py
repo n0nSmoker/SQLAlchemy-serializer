@@ -14,6 +14,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import requests
 
 # Handle TOML parsing for different Python versions
 try:
@@ -217,6 +218,99 @@ def test_package_can_be_installed():
 
         assert import_result.returncode == 0, (
             f"Package import failed after installation.\n"
+            f"STDOUT: {import_result.stdout}\n"
+            f"STDERR: {import_result.stderr}"
+        )
+
+
+@pytest.mark.pypi
+def test_pypi_version_can_be_installed_and_used():
+    """Test that the current version from PyPI can be installed and used."""
+    if tomllib is None:
+        pytest.skip("tomllib or tomli is required to get package name")
+
+    project_root = Path(__file__).parent.parent
+    pyproject_path = project_root / "pyproject.toml"
+
+    # Get package name from pyproject.toml
+    with open(pyproject_path, "rb") as f:
+        config = tomllib.load(f)
+
+    package_name = config.get("project", {}).get("name")
+    if not package_name:
+        pytest.skip("Package name not found in pyproject.toml")
+
+    # Query PyPI API for latest version
+    pypi_url = f"https://pypi.org/pypi/{package_name}/json"
+    try:
+        response = requests.get(pypi_url, timeout=10)
+        response.raise_for_status()
+        pypi_data = response.json()
+    except requests.RequestException as e:
+        pytest.skip(f"Failed to query PyPI: {e}")
+
+    # Get the latest version
+    latest_version = pypi_data.get("info", {}).get("version")
+    if not latest_version:
+        pytest.skip("No version found in PyPI response")
+
+    # Create a temporary virtual environment
+    with tempfile.TemporaryDirectory() as tmpdir:
+        venv_path = Path(tmpdir) / "test_venv"
+
+        # Create virtual environment
+        subprocess.run(
+            [sys.executable, "-m", "venv", str(venv_path)],
+            check=True,
+            capture_output=True,
+        )
+
+        # Get pip path
+        if sys.platform == "win32":
+            pip_path = venv_path / "Scripts" / "pip"
+            python_path = venv_path / "Scripts" / "python"
+        else:
+            pip_path = venv_path / "bin" / "pip"
+            python_path = venv_path / "bin" / "python"
+
+        # Install the package from PyPI
+        install_result = subprocess.run(
+            [str(pip_path), "install", f"{package_name}=={latest_version}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert install_result.returncode == 0, (
+            f"PyPI package installation failed.\n"
+            f"STDOUT: {install_result.stdout}\n"
+            f"STDERR: {install_result.stderr}"
+        )
+
+        # Verify package can be imported
+        import_test_code = """
+import sqlalchemy_serializer
+from sqlalchemy_serializer import SerializerMixin, Serializer
+
+# Test basic import
+assert hasattr(sqlalchemy_serializer, 'SerializerMixin')
+assert hasattr(sqlalchemy_serializer, 'Serializer')
+
+# Test Serializer can be instantiated
+serializer = Serializer()
+assert serializer is not None
+
+print('OK')
+"""
+        import_result = subprocess.run(
+            [str(python_path), "-c", import_test_code],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert import_result.returncode == 0, (
+            f"Package usage test failed after PyPI installation.\n"
             f"STDOUT: {import_result.stdout}\n"
             f"STDERR: {import_result.stderr}"
         )

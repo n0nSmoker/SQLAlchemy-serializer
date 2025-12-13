@@ -17,6 +17,11 @@ from .lib.schema import Schema
 logger = logging.getLogger("serializer")
 logger.setLevel(level="WARN")
 
+SERIALIZER_DEFAULT_DATE_FORMAT = "%Y-%m-%d"
+SERIALIZER_DEFAULT_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+SERIALIZER_DEFAULT_TIME_FORMAT = "%H:%M"
+SERIALIZER_DEFAULT_DECIMAL_FORMAT = "{}"
+
 
 class SerializerMixin:
     """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
@@ -38,10 +43,10 @@ class SerializerMixin:
     # Custom list of fields to serialize in this model
     serializable_keys: tuple = ()
 
-    date_format = "%Y-%m-%d"
-    datetime_format = "%Y-%m-%d %H:%M:%S"
-    time_format = "%H:%M"
-    decimal_format = "{}"
+    date_format = SERIALIZER_DEFAULT_DATE_FORMAT
+    datetime_format = SERIALIZER_DEFAULT_DATETIME_FORMAT
+    time_format = SERIALIZER_DEFAULT_TIME_FORMAT
+    decimal_format = SERIALIZER_DEFAULT_DECIMAL_FORMAT
 
     # Serialize fields of the model defined as @property automatically
     auto_serialize_properties: bool = False
@@ -111,7 +116,18 @@ class Serializer:
 
     def __init__(self, **kwargs):
         self.set_serialization_depth(0)
-        self.set_options(Options(**kwargs))
+        # Provide defaults for Options if not specified
+        options_kwargs = {
+            "date_format": kwargs.get("date_format", SERIALIZER_DEFAULT_DATE_FORMAT),
+            "datetime_format": kwargs.get(
+                "datetime_format", SERIALIZER_DEFAULT_DATETIME_FORMAT
+            ),
+            "time_format": kwargs.get("time_format", SERIALIZER_DEFAULT_TIME_FORMAT),
+            "decimal_format": kwargs.get("decimal_format", SERIALIZER_DEFAULT_DECIMAL_FORMAT),
+            "tzinfo": kwargs.get("tzinfo"),
+            "serialize_types": kwargs.get("serialize_types", ()),
+        }
+        self.set_options(Options(**options_kwargs))
         self.init_callbacks()
 
         self.schema = Schema()
