@@ -1,3 +1,10 @@
+# Include required files
+include README.md
+include LICENSE
+
+# Include package files
+recursive-include sqlalchemy_serializer *.py
+
 # Exclude the local virtual environment directory if it's named .venv
 prune .venv
 

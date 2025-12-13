@@ -1,13 +1,10 @@
 import pytz
 
-from .models import FlatModel, DATETIME, TIME, DATE
+from .models import DATE, DATETIME, TIME, FlatModel
 
 
 def test_tzinfo_set_directly(get_instance):
-    """
-    Checks how serializer applies tzinfo for datetime objects
-
-    """
+    """Checks how serializer applies tzinfo for datetime objects"""
     i = get_instance(FlatModel)
 
     # Default formats

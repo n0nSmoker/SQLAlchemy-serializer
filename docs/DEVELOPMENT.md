@@ -6,7 +6,7 @@
 
 - **Python**: 3.10+ (specified in `pyproject.toml`)
 - **Docker & Docker Compose**: Required for running tests with PostgreSQL
-- **Poetry**: Dependency management (installed via Docker or locally)
+- **uv**: Dependency management (installed via Docker or locally)
 
 ### Local Development Setup
 
@@ -16,14 +16,14 @@
    cd SQLAlchemy-serializer
    ```
 
-2. **Install dependencies with Poetry**
+2. **Install dependencies with uv**
    ```bash
-   poetry install --with dev
+   uv pip install -e ".[dev]"
    ```
 
-3. **Activate virtual environment**
+3. **Activate virtual environment** (if using uv's venv)
    ```bash
-   poetry shell
+   source .venv/bin/activate  # or .venv\Scripts\activate on Windows
    ```
 
 ### Docker-based Development
@@ -70,14 +70,14 @@ The Docker setup includes:
    make test
    ```
 
-4. **Format code**
+4. **Format and lint code**
    ```bash
-   make format  # Runs black formatter
+   make format  # Runs ruff format and ruff check --fix
    ```
 
-5. **Check linting**
+5. **Check linting only (no auto-fix)**
    ```bash
-   poetry run pylama .
+   uv run ruff check .
    ```
 
 6. **Commit changes**
@@ -401,10 +401,9 @@ print(serializer.schema._tree)  # Inspect rule tree
 ### Updating Dependencies
 
 1. **Update version in `pyproject.toml`**
-2. **Update lock file**:
+2. **Update dependencies**:
    ```bash
-   poetry update <package>
-   poetry lock
+   uv pip install -e ".[dev]" --upgrade
    ```
 3. **Test compatibility**:
    ```bash
@@ -436,7 +435,7 @@ print(serializer.schema._tree)  # Inspect rule tree
 
 Version is specified in `pyproject.toml`:
 ```toml
-[tool.poetry]
+[project]
 version = "1.4.22"
 ```
 
@@ -449,7 +448,7 @@ Follow [Semantic Versioning](https://semver.org/):
 
 - [ ] All tests pass (`make test`)
 - [ ] Code coverage ≥ 80%
-- [ ] No linting errors (`poetry run pylama .`)
+- [ ] No linting errors (`uv run ruff check .`)
 - [ ] Code formatted (`make format`)
 - [ ] Documentation updated (README.md, ARCHITECTURE.md, DEVELOPMENT.md, KNOWLEDGE.md)
 - [ ] CHANGELOG updated (if maintained)
@@ -469,12 +468,12 @@ Follow [Semantic Versioning](https://semver.org/):
 
 3. **Build package**:
    ```bash
-   poetry build
+   uv build
    ```
 
 4. **Publish to PyPI** (if maintainer):
    ```bash
-   poetry publish
+   uv publish
    ```
 
 5. **Push to repository**:

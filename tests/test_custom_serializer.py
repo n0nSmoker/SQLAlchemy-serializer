@@ -1,22 +1,20 @@
 from .models import (
-    CustomSerializerModel,
-    DATETIME,
-    TIME,
-    DATE,
-    MONEY,
-    CUSTOM_TZINFO,
     CUSTOM_DATE_FORMAT,
-    CUSTOM_TIME_FORMAT,
     CUSTOM_DATE_TIME_FORMAT,
     CUSTOM_DECIMAL_FORMAT,
     CUSTOM_STR_VALUE,
+    CUSTOM_TIME_FORMAT,
+    CUSTOM_TZINFO,
+    DATE,
+    DATETIME,
+    MONEY,
+    TIME,
+    CustomSerializerModel,
 )
 
 
 def test_tzinfo_set_in_serializer(get_instance):
-    """
-    Checks how serializer applies tzinfo for datetime objects
-    """
+    """Checks how serializer applies tzinfo for datetime objects"""
     i = get_instance(CustomSerializerModel)
     data = i.to_dict()
 
@@ -42,9 +40,7 @@ def test_tzinfo_set_in_serializer(get_instance):
 
 
 def test_add_custom_serialization_types(get_instance):
-    """
-    Checks custom type serializers
-    """
+    """Checks custom type serializers"""
     i = get_instance(CustomSerializerModel)
     data = i.to_dict()
 

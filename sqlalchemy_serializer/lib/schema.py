@@ -1,15 +1,11 @@
 import logging
 from collections import defaultdict
-import typing as t
-
 
 logger = logging.getLogger("serializer")
 
 
 class Tree(defaultdict):
-    def __init__(
-        self, to_include=None, to_exclude=None, is_greedy=True, *args, **kwargs
-    ):
+    def __init__(self, to_include=None, to_exclude=None, is_greedy=True, *args, **kwargs):
         super(Tree, self).__init__(*args, **kwargs)
         self.default_factory = Tree
         self.to_include = to_include
@@ -63,7 +59,7 @@ class Rule:
 
 
 class Schema:
-    def __init__(self, tree: t.Optional[Tree] = None):
+    def __init__(self, tree: Tree | None = None):
         self._tree = tree or Tree()
 
     @property
@@ -112,9 +108,7 @@ class Schema:
 
                 if is_last_key:
                     if not parent.is_greedy:
-                        logger.debug(
-                            "Ignore rule:%s parent does not accept new rules", raw
-                        )
+                        logger.debug("Ignore rule:%s parent does not accept new rules", raw)
                     elif rule.is_negative and node.to_include:
                         logger.debug("Ignore rule:%s leaf includes key:%s", raw, k)
                     else:
@@ -132,8 +126,7 @@ class Schema:
             if not node:
                 return node is None or not node.to_exclude
             return True
-        else:
-            return bool(node is not None and node.to_include)
+        return bool(node is not None and node.to_include)
 
     def fork(self, key: str) -> "Schema":
         return Schema(tree=self._tree[key])

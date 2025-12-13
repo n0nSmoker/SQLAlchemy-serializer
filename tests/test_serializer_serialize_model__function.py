@@ -21,9 +21,7 @@ def test_model(get_instance):
         (("null",), {"null": None}),  # FIXME: Invalid JSON
     ],
 )
-def test_serializer_serialize_model__fork_success(
-    get_serializer, test_model, only, expected
-):
+def test_serializer_serialize_model__fork_success(get_serializer, test_model, only, expected):
     serializer = get_serializer()
     serializer.schema.update(only=only)
     result = serializer.serialize_model(test_model)

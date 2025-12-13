@@ -1,6 +1,6 @@
 import pytest
 
-from sqlalchemy_serializer.lib.schema import Schema, Rule, Tree
+from sqlalchemy_serializer.lib.schema import Rule, Schema, Tree
 
 
 @pytest.mark.parametrize("tree", [None, Tree(to_include=False)])
@@ -120,9 +120,7 @@ def test_is_greedy_updated(old, new, expected):
     ],
 )
 def test_update_method(old, new, expect):
-    """
-    Checks if the schema merges rules correctly
-    """
+    """Checks if the schema merges rules correctly"""
     schema = Schema()
     schema.update(**old)
     schema.update(**new)
@@ -130,9 +128,8 @@ def test_update_method(old, new, expect):
     assert schema._tree.is_greedy == bool(not (old.get("only") or new.get("only")))
     for rule in expect:
         if rule.startswith("!"):
-            rule = rule[1:]
             with pytest.raises(NoNodeException):
-                check_rule(text=rule, tree=schema._tree)
+                check_rule(text=rule[1:], tree=schema._tree)
         else:
             check_rule(text=rule, tree=schema._tree)
 
@@ -238,8 +235,7 @@ def test_fork_method(args, new_args, is_greedy):
 
 
 def check_rule(text: str, tree: Tree) -> Tree:
-    """
-    Checks that the rule is correctly stored in the tree
+    """Checks that the rule is correctly stored in the tree
     and returns the leaf
     """
     rule = Rule(text)

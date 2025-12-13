@@ -24,9 +24,7 @@ def test_tree_defaults():
     ],
 )
 def test_tree_init(to_include, to_exclude, is_greedy, props):
-    tree = Tree(
-        to_include=to_include, to_exclude=to_exclude, is_greedy=is_greedy, **props
-    )
+    tree = Tree(to_include=to_include, to_exclude=to_exclude, is_greedy=is_greedy, **props)
     assert tree.to_exclude == to_exclude
     assert tree.to_include == to_include
     assert tree.is_greedy == is_greedy

@@ -11,11 +11,10 @@ services:
     build: .
     command:
       [
-        "poetry",
+        "uv",
         "run",
         "pytest",
         "-vv",
-        "--pylama",
         "--cov=sqlalchemy_serializer",
         "--cov-report",
         "term-missing",

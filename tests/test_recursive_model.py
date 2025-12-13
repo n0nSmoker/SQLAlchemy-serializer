@@ -2,9 +2,7 @@ from .models import RecursiveModel
 
 
 def test_no_rules(get_instance):
-    """
-    Checks to_dict method of model without rules
-    """
+    """Checks to_dict method of model without rules"""
     root = get_instance(RecursiveModel)
     child_full = get_instance(RecursiveModel, parent_id=root.id)
     _ = get_instance(RecursiveModel, parent_id=child_full.id)
@@ -22,8 +20,7 @@ def test_no_rules(get_instance):
 
 
 def test_rules_in_class(get_instance):
-    """
-    Checks to_dict method of model with rules
+    """Checks to_dict method of model with rules
     defined on class level
     """
     root = get_instance(RecursiveModel)
@@ -43,8 +40,7 @@ def test_rules_in_class(get_instance):
 
 
 def test_rules_in_method_call(get_instance):
-    """
-    Checks to_dict method of model with rules
+    """Checks to_dict method of model with rules
     passed in to_dict method
     """
     root = get_instance(RecursiveModel)
@@ -64,8 +60,7 @@ def test_rules_in_method_call(get_instance):
 
 
 def test_combination_of_rules(get_instance):
-    """
-    Checks to_dict method of model with combinations of
+    """Checks to_dict method of model with combinations of
     rules passed in to_dict method
     """
     root = get_instance(RecursiveModel)

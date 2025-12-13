@@ -1,4 +1,5 @@
 import enum
+
 from .base import Base
 
 

@@ -3,16 +3,13 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytz
-
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
+
 from sqlalchemy_serializer import SerializerMixin
 
-
-DATETIME = datetime(
-    year=2018, month=1, day=1, hour=1, minute=1, second=1, microsecond=123
-)
+DATETIME = datetime(year=2018, month=1, day=1, hour=1, minute=1, second=1, microsecond=123)
 DATE = DATETIME.date()
 TIME = DATETIME.time()
 

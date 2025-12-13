@@ -1,4 +1,5 @@
 import decimal
+
 from .base import Base
 
 

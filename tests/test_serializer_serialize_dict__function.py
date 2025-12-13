@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 import pytest
 
 
@@ -45,9 +46,7 @@ def test_serializer_serialize_dict__success(get_serializer, test_dict):
         (("list_of_dicts.int",), {"list_of_dicts": [{"int": 1235}]}),
     ],
 )
-def test_serializer_serialize_dict__fork_success(
-    get_serializer, test_dict, only, expected
-):
+def test_serializer_serialize_dict__fork_success(get_serializer, test_dict, only, expected):
     serializer = get_serializer()
     serializer.schema.update(only=only)
     result = serializer.serialize_dict(test_dict)

@@ -1,13 +1,13 @@
-import os
-import pytest
 import logging
+import os
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy_serializer.serializer import Serializer
-from .models import Base
 
+from .models import Base
 
 logger = logging.getLogger("serializer")
 logger.setLevel(logging.DEBUG)
@@ -60,7 +60,7 @@ def get_instance(session):
     return func
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_serializer():
     def func(
         date_format=DEFAULT_DATE_FORMAT,

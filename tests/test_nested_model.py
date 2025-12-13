@@ -1,10 +1,8 @@
-from .models import FlatModel, NestedModel, DATETIME, TIME, DATE
+from .models import DATE, DATETIME, TIME, FlatModel, NestedModel
 
 
 def test_no_defaults_no_rules(get_instance):
-    """
-    Checks to_dict method of model with no predefined options
-    """
+    """Checks to_dict method of model with no predefined options"""
     i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
     data = i.to_dict()
 
@@ -33,8 +31,7 @@ def test_no_defaults_no_rules(get_instance):
 
 
 def test_datetime_default_formats(get_instance):
-    """
-    Check date/datetime/time
+    """Check date/datetime/time
     default formats in resulting JSON of model with no predefined options
     """
     i = get_instance(NestedModel, model_id=get_instance(FlatModel).id)
@@ -56,8 +53,7 @@ def test_datetime_default_formats(get_instance):
 
 
 def test_datetime_formats_got_in_runtime(get_instance):
-    """
-    Check date/datetime/time
+    """Check date/datetime/time
     default formats in resulting JSON of flat model got as the parameters of to_dict func
     """
     d_format = "%Y/%m/%d"

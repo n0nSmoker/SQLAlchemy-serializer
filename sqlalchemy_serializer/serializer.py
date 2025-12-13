@@ -1,27 +1,25 @@
-import uuid
-from datetime import datetime, date, time
-from decimal import Decimal
-from enum import Enum
-import logging
 import inspect
+import logging
+import typing as t
+import uuid
 from collections import namedtuple
 from collections.abc import Iterable
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
 from types import MethodType
-import typing as t
 
 from sqlalchemy_serializer.lib.fields import get_serializable_keys
 
-from .lib.schema import Schema
 from .lib import serializable
-
+from .lib.schema import Schema
 
 logger = logging.getLogger("serializer")
 logger.setLevel(level="WARN")
 
 
 class SerializerMixin:
-    """
-    Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
+    """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
     with no pain
     It can be inherited to redefine get_tzinfo callback, datetime formats or to add
     some extra serialization logic
@@ -49,14 +47,13 @@ class SerializerMixin:
     auto_serialize_properties: bool = False
 
     def get_tzinfo(self):
-        """
-        Callback to make serializer aware of user's timezone. Should be redefined if needed
+        """Callback to make serializer aware of user's timezone. Should be redefined if needed
         Example:
             return pytz.timezone('Africa/Abidjan')
 
         :return: datetime.tzinfo
         """
-        return None
+        return
 
     def to_dict(
         self,
@@ -69,8 +66,7 @@ class SerializerMixin:
         decimal_format=None,
         serialize_types=None,
     ):
-        """
-        Returns SQLAlchemy model's data in JSON compatible format
+        """Returns SQLAlchemy model's data in JSON compatible format
 
         For details about datetime formats follow:
         https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
@@ -121,8 +117,7 @@ class Serializer:
         self.schema = Schema()
 
     def __call__(self, value, only=(), extend=()):
-        """
-        Serialization starts here
+        """Serialization starts here
         :param value: Value to serialize
         :param only: Exclusive schema of serialization
         :param extend: Rules that extend default schema
@@ -166,9 +161,7 @@ class Serializer:
 
     @staticmethod
     def is_valid_callable(func) -> bool:
-        """
-        Determines objects that should be called before serialization
-        """
+        """Determines objects that should be called before serialization"""
         if callable(func):
             i = inspect.getfullargspec(func)
             if (
@@ -181,16 +174,13 @@ class Serializer:
         return False
 
     def is_forkable(self, value):
-        """
-        Determines if object should be processed in a separate serializer
-        """
+        """Determines if object should be processed in a separate serializer"""
         return not isinstance(value, str) and isinstance(
             value, (Iterable, dict, SerializerMixin)
         )
 
     def fork(self, key: str) -> "Serializer":
-        """
-        Return new serializer for a key
+        """Return new serializer for a key
         :return: serializer
         """
         serializer = Serializer(**self.opts._asdict())
@@ -201,8 +191,7 @@ class Serializer:
         return serializer
 
     def serialize(self, value, **kwargs):
-        """
-        Orchestrates the serialization process.
+        """Orchestrates the serialization process.
 
         Args:
             value: The value to be serialized.
@@ -211,6 +200,7 @@ class Serializer:
 
         Returns:
             The serialized value.
+
         """
         if self.is_valid_callable(value):
             value = value()
@@ -225,8 +215,7 @@ class Serializer:
         return self.apply_callback(value=value)
 
     def apply_callback(self, value):
-        """
-        Apply a proper callback to serialize the value
+        """Apply a proper callback to serialize the value
         :return: serialized value
         :raises: IsNotSerializable
         """
@@ -247,9 +236,7 @@ class Serializer:
         for v in value:
             try:
                 r = self.serialize(v)
-            except (
-                IsNotSerializable
-            ):  # FIXME: Why we swallow exception only in iterable?
+            except IsNotSerializable:  # FIXME: Why we swallow exception only in iterable?
                 logger.warning("Can not serialize type:%s", get_type(v))
                 continue
 

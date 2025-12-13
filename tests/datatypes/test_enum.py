@@ -1,4 +1,5 @@
 from enum import Enum
+
 import pytest
 
 
@@ -27,7 +28,6 @@ class Strings(Enum):
 
 
 def test_enums(default_options, get_serializer):
-
     data = {
         "int_enum": Numbers.FIRST,
         "string_enum": Strings.RED,
