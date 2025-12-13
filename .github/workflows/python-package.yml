@@ -48,4 +48,4 @@ jobs:
 
     - name: Run tests
       run: |
-        uv run pytest
+        uv run pytest --cov=sqlalchemy_serializer --cov-report term-missing
