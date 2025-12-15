@@ -80,19 +80,30 @@ You can use negative rules in `only` param too.
 So `item.to_dict(only=('somefield', -'somefield.id'))`
 will return `somefiled` without `id`. See [Negative rules in ONLY section](#Negative-rules-in-ONLY-section)
 
+If you want to exclude specific values from the serialized output (e.g., `None` values):
+```python
+result = item.to_dict(exclude_values=(None,))
+```
+This will exclude all fields that have `None` as their value. You can exclude multiple values:
+```python
+result = item.to_dict(exclude_values=(None, True, ''))
+```
+**Note** that `exclude_values` works with hashable values only. It filters values after serialization, so it works with nested dictionaries and models as well.
+
 If you want to define schema for all instances of particular SQLAlchemy model,
 add serialize properties to model definition:
 ```python
 class SomeModel(db.Model, SerializerMixin):
     serialize_only = ('somefield.id',)
     serialize_rules = ()
+    exclude_values = (None,)  # Exclude None values for all instances
     ...
     somefield = db.relationship('AnotherModel')
 
 result = item.to_dict()
 ```
 So the `result` in this case will be `{'somefield': [{'id': some_id}]}`
-***serialize_only*** and  ***serialize_rules*** work the same way as ***to_dict's*** arguments
+***serialize_only***, ***serialize_rules***, and ***exclude_values*** work the same way as ***to_dict's*** arguments
 
 
 # Advanced usage
@@ -175,6 +186,38 @@ dict(
     rel=dict(
         id=1
     )
+)
+
+
+# Exclude specific values
+item.to_dict(exclude_values=(None,))
+
+dict(
+    id=1,
+    string='Some string!',
+    boolean=True,
+    flat_id=1,
+    rel=[dict(
+        id=1,
+        string='Some string!',
+        boolean=True,
+        non_sqlalchemy_dict=dict(qwerty=123)
+    )]
+)
+# Note: 'null' field is excluded because its value is None
+
+
+# Exclude values with nested dictionaries
+item.dict = {"key": 123, "null_key": None, "key2": 456}
+item.to_dict(rules=("dict",), exclude_values=(None,))
+
+dict(
+    ...
+    dict=dict(
+        key=123,
+        key2=456
+    )
+    # Note: 'null_key' is excluded from nested dict
 )
 ```
 # Recursive models and trees
