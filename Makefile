@@ -5,7 +5,7 @@ test:
 	TEST_FILE=$(FILE) docker-compose up --build --abort-on-container-exit
 
 test-pypi:
-	uv run pytest -xvrs --color=yes -m pypi tests/test_pypi_readiness.py::test_pypi_version_can_be_installed_and_used
+	uv run pytest -xvrs --color=yes -m pypi tests/test_pypi_readiness.py
 
 format:
 	uv run ruff format .

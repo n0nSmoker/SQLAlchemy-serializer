@@ -22,6 +22,9 @@ SERIALIZER_DEFAULT_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SERIALIZER_DEFAULT_TIME_FORMAT = "%H:%M"
 SERIALIZER_DEFAULT_DECIMAL_FORMAT = "{}"
 
+# sentinel value for unspecified key since None and Ellipsis are valid keys
+_UNSPECIFIED = object()
+
 
 class SerializerMixin:
     """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
@@ -37,11 +40,14 @@ class SerializerMixin:
     # Additions to default schema. Can include negative rules
     serialize_rules: tuple = ()
 
-    # Extra serialising functions
+    # Extra serializing functions
     serialize_types: tuple = ()
 
     # Custom list of fields to serialize in this model
     serializable_keys: tuple = ()
+
+    # Iterable of hashable values to exclude from serialized output
+    exclude_values: Iterable = ()
 
     date_format = SERIALIZER_DEFAULT_DATE_FORMAT
     datetime_format = SERIALIZER_DEFAULT_DATETIME_FORMAT
@@ -70,6 +76,7 @@ class SerializerMixin:
         tzinfo=None,
         decimal_format=None,
         serialize_types=None,
+        exclude_values=None,
     ):
         """Returns SQLAlchemy model's data in JSON compatible format
 
@@ -85,6 +92,7 @@ class SerializerMixin:
         :param decimal_format: str
         :param serialize_types:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
+        :param exclude_values: iterable of hashable values to exclude from serialized output
         :return: data: dict
         """
         s = Serializer(
@@ -94,13 +102,14 @@ class SerializerMixin:
             decimal_format=decimal_format or self.decimal_format,
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types,
+            exclude_values=exclude_values or self.exclude_values,
         )
         return s(self, only=only, extend=rules)
 
 
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types",
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types exclude_values",  # noqa: E501
 )
 
 
@@ -117,6 +126,9 @@ class Serializer:
     def __init__(self, **kwargs):
         self.set_serialization_depth(0)
         # Provide defaults for Options if not specified
+        exclude_values = kwargs.get("exclude_values")
+        exclude_values_set = set(exclude_values) if exclude_values else None
+
         options_kwargs = {
             "date_format": kwargs.get("date_format", SERIALIZER_DEFAULT_DATE_FORMAT),
             "datetime_format": kwargs.get(
@@ -126,6 +138,7 @@ class Serializer:
             "decimal_format": kwargs.get("decimal_format", SERIALIZER_DEFAULT_DECIMAL_FORMAT),
             "tzinfo": kwargs.get("tzinfo"),
             "serialize_types": kwargs.get("serialize_types", ()),
+            "exclude_values": exclude_values_set,
         }
         self.set_options(Options(**options_kwargs))
         self.init_callbacks()
@@ -149,6 +162,18 @@ class Serializer:
 
     def set_options(self, opts: Options):
         self.opts = opts
+
+    def should_exclude(self, value) -> bool:
+        """Check if value should be excluded based on exclude_values"""
+        if self.opts.exclude_values is None:
+            return False
+        try:
+            # if value is not hashable, we cannot compare it with exclude_values
+            hash(value)
+        except TypeError:
+            return False
+
+        return value in self.opts.exclude_values
 
     def init_callbacks(self):
         """Initialize callbacks"""
@@ -206,29 +231,31 @@ class Serializer:
         logger.debug("Fork serializer for key:%s", key)
         return serializer
 
-    def serialize(self, value, **kwargs):
+    def serialize(self, value, key=_UNSPECIFIED):
         """Orchestrates the serialization process.
 
         Args:
             value: The value to be serialized.
-            **kwargs: Only to ensure that no key is passed
-                        since None and Ellipsis are valid keys.
+            key: The key to be serialized.
 
         Returns:
             The serialized value.
-
         """
         if self.is_valid_callable(value):
             value = value()
             logger.debug("Process callable resulting type:%s", get_type(value))
 
-        if kwargs:
-            if "key" in kwargs:
-                # since None and ... are valid keys
-                return self.serialize_with_fork(value=value, key=kwargs["key"])
-            raise ValueError("Malformed structure of kwargs. Only `key` accepted")
+        if not self.should_exclude(value):
+            try:
+                if key is not _UNSPECIFIED:  # since None and Ellipsis are valid keys
+                    return self.serialize_with_fork(value=value, key=key)
+                return self.apply_callback(value=value)
 
-        return self.apply_callback(value=value)
+            except IsNotSerializable:
+                logger.warning("Can not serialize type:%s", get_type(value))
+
+        logger.debug("Skip value:%s", value)
+        return _UNSPECIFIED
 
     def apply_callback(self, value):
         """Apply a proper callback to serialize the value
@@ -241,6 +268,7 @@ class Serializer:
         raise IsNotSerializable(f"Unserializable type:{get_type(value)} value:{value}")
 
     def serialize_with_fork(self, value, key):
+        """Serialize value with a forked serializer"""
         serializer = self
         if self.is_forkable(value):
             serializer = self.fork(key=key)
@@ -250,13 +278,9 @@ class Serializer:
     def serialize_iter(self, value: Iterable) -> list:
         res = []
         for v in value:
-            try:
-                r = self.serialize(v)
-            except IsNotSerializable:  # FIXME: Why we swallow exception only in iterable?
-                logger.warning("Can not serialize type:%s", get_type(v))
-                continue
-
-            res.append(r)
+            result = self.serialize(v)
+            if result is not _UNSPECIFIED:
+                res.append(result)
         return res
 
     def serialize_dict(self, value: dict) -> dict:
@@ -265,7 +289,9 @@ class Serializer:
             if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
 
-                res[k] = self.serialize(value=v, key=k)
+                result = self.serialize(value=v, key=k)
+                if result is not _UNSPECIFIED:
+                    res[k] = result
             else:
                 logger.debug("Skip key:%s of dict", k)
         return res
@@ -287,7 +313,9 @@ class Serializer:
                     get_type(v),
                     get_type(value),
                 )
-                res[k] = self.serialize(value=v, key=k)
+                result = self.serialize(value=v, key=k)
+                if result is not _UNSPECIFIED:
+                    res[k] = result
 
             else:
                 logger.debug("Skip key:%s of model:%s", k, get_type(value))
