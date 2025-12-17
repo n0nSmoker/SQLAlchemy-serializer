@@ -90,6 +90,22 @@ result = item.to_dict(exclude_values=(None, True, ''))
 ```
 **Note** that `exclude_values` works with hashable values only. It filters values after serialization, so it works with nested dictionaries and models as well.
 
+If you want to control the maximum depth for relationship recursion:
+```python
+# Limit to one level of nesting (prevents infinite recursion)
+result = item.to_dict(max_serialization_depth=1)
+
+# Disable relationship serialization entirely
+result = item.to_dict(max_serialization_depth=0)
+
+# Set default for all instances of a model
+class SomeModel(db.Model, SerializerMixin):
+    max_serialization_depth = 1  # Only serialize direct relationships
+    ...
+```
+By default, `max_serialization_depth` is `math.inf` (unlimited), maintaining backward compatibility.
+See [Max recursion](#Max-recursion) for more details.
+
 If you want to define schema for all instances of particular SQLAlchemy model,
 add serialize properties to model definition:
 ```python
@@ -392,7 +408,23 @@ response = serialize_collection(Category.query.all(), **some_params)
 ## Max recursion
 If you've faced with **maximum recursion depth exceeded** exception,
 most likely the serializer have found instance of the same class somewhere among model's relationships.
-Especially if you use backrefs. In this case you need to tell it where to stop like below:
+Especially if you use backrefs. 
+
+**Solution 1: Use `max_serialization_depth` (Recommended)**
+The easiest way to prevent infinite recursion is to set a maximum depth:
+```python
+# Per-call limit
+user.to_dict(max_serialization_depth=1)  # Only serialize direct relationships
+
+# Model-level default
+class User(Base, SerializerMixin):
+    max_serialization_depth = 1  # Prevent recursion for all instances
+    ...
+    related_models = relationship("RelatedModel", backref='user')
+```
+
+**Solution 2: Use rules to exclude specific relationships**
+You can also use rules to tell the serializer where to stop:
 ```python
 class User(Base, SerializerMixin):
     __tablename__ = 'users'

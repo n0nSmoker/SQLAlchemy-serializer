@@ -1,5 +1,6 @@
 import inspect
 import logging
+import math
 import typing as t
 import uuid
 from collections import namedtuple
@@ -57,6 +58,9 @@ class SerializerMixin:
     # Serialize fields of the model defined as @property automatically
     auto_serialize_properties: bool = False
 
+    # Maximum depth for relationship recursion (default: unlimited)
+    max_serialization_depth: float = math.inf
+
     def get_tzinfo(self):
         """Callback to make serializer aware of user's timezone. Should be redefined if needed
         Example:
@@ -77,6 +81,7 @@ class SerializerMixin:
         decimal_format=None,
         serialize_types=None,
         exclude_values=None,
+        max_serialization_depth=None,
     ):
         """Returns SQLAlchemy model's data in JSON compatible format
 
@@ -93,6 +98,8 @@ class SerializerMixin:
         :param serialize_types:
         :param tzinfo: datetime.tzinfo converts datetimes to local user timezone
         :param exclude_values: iterable of hashable values to exclude from serialized output
+        :param max_serialization_depth: maximum depth for relationship recursion
+            (default: unlimited)
         :return: data: dict
         """
         s = Serializer(
@@ -103,13 +110,18 @@ class SerializerMixin:
             tzinfo=tzinfo or self.get_tzinfo(),
             serialize_types=serialize_types or self.serialize_types,
             exclude_values=exclude_values or self.exclude_values,
+            max_serialization_depth=(
+                max_serialization_depth
+                if max_serialization_depth is not None
+                else self.max_serialization_depth
+            ),
         )
         return s(self, only=only, extend=rules)
 
 
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types exclude_values",  # noqa: E501
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types exclude_values max_serialization_depth",  # noqa: E501
 )
 
 
@@ -139,6 +151,7 @@ class Serializer:
             "tzinfo": kwargs.get("tzinfo"),
             "serialize_types": kwargs.get("serialize_types", ()),
             "exclude_values": exclude_values_set,
+            "max_serialization_depth": kwargs.get("max_serialization_depth", math.inf),
         }
         self.set_options(Options(**options_kwargs))
         self.init_callbacks()
@@ -271,6 +284,14 @@ class Serializer:
         """Serialize value with a forked serializer"""
         serializer = self
         if self.is_forkable(value):
+            # Check depth limit before forking
+            if self.serialization_depth >= self.opts.max_serialization_depth:
+                logger.debug(
+                    "Max serialization depth reached at depth:%s for key:%s",
+                    self.serialization_depth,
+                    key,
+                )
+                return _UNSPECIFIED
             serializer = self.fork(key=key)
 
         return serializer.apply_callback(value)
