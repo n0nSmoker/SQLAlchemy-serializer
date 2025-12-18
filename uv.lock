@@ -551,7 +551,7 @@ wheels = [
 
 [[package]]
 name = "sqlalchemy-serializer"
-version = "1.5.3"
+version = "1.5.4"
 source = { editable = "." }
 dependencies = [
     { name = "psycopg2-binary" },
