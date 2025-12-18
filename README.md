@@ -106,6 +106,27 @@ class SomeModel(db.Model, SerializerMixin):
 By default, `max_serialization_depth` is `math.inf` (unlimited), maintaining backward compatibility.
 See [Max recursion](#Max-recursion) for more details.
 
+If you want to apply custom serialization logic to specific columns:
+```python
+# At call time
+result = item.to_dict(serialize_columns={
+    'password': lambda v: '***' if v else None,
+    'email': lambda v: v.lower() if v else None,
+    'id': lambda v: str(v),
+})
+
+# Set default for all instances of a model
+class SomeModel(db.Model, SerializerMixin):
+    serialize_columns = {
+        'password': lambda v: '***' if v else None,
+        'email': lambda v: v.lower() if v else None,
+    }
+    ...
+
+result = item.to_dict()
+```
+Custom serializers in `serialize_columns` replace normal serialization for matching columns. The custom serializer function receives the field value and should return the serialized result.
+
 If you want to define schema for all instances of particular SQLAlchemy model,
 add serialize properties to model definition:
 ```python
@@ -113,13 +134,14 @@ class SomeModel(db.Model, SerializerMixin):
     serialize_only = ('somefield.id',)
     serialize_rules = ()
     exclude_values = (None,)  # Exclude None values for all instances
+    serialize_columns = {'id': lambda v: str(v)}  # Custom serializers per column
     ...
     somefield = db.relationship('AnotherModel')
 
 result = item.to_dict()
 ```
 So the `result` in this case will be `{'somefield': [{'id': some_id}]}`
-***serialize_only***, ***serialize_rules***, and ***exclude_values*** work the same way as ***to_dict's*** arguments
+***serialize_only***, ***serialize_rules***, ***exclude_values***, and ***serialize_columns*** work the same way as ***to_dict's*** arguments
 
 
 # Advanced usage

@@ -61,6 +61,9 @@ class SerializerMixin:
     # Maximum depth for relationship recursion (default: unlimited)
     max_serialization_depth: float = math.inf
 
+    # Custom serializers per column name
+    serialize_columns: dict = {}
+
     def get_tzinfo(self):
         """Callback to make serializer aware of user's timezone. Should be redefined if needed
         Example:
@@ -82,6 +85,7 @@ class SerializerMixin:
         serialize_types=None,
         exclude_values=None,
         max_serialization_depth=None,
+        serialize_columns=None,
     ):
         """Returns SQLAlchemy model's data in JSON compatible format
 
@@ -100,6 +104,8 @@ class SerializerMixin:
         :param exclude_values: iterable of hashable values to exclude from serialized output
         :param max_serialization_depth: maximum depth for relationship recursion
             (default: unlimited)
+        :param serialize_columns: dict mapping column names to custom serializer functions.
+            Custom serializers replace normal serialization for matching columns.
         :return: data: dict
         """
         s = Serializer(
@@ -115,13 +121,14 @@ class SerializerMixin:
                 if max_serialization_depth is not None
                 else self.max_serialization_depth
             ),
+            serialize_columns=serialize_columns or self.serialize_columns,
         )
         return s(self, only=only, extend=rules)
 
 
 Options = namedtuple(
     "Options",
-    "date_format datetime_format time_format decimal_format tzinfo serialize_types exclude_values max_serialization_depth",  # noqa: E501
+    "date_format datetime_format time_format decimal_format tzinfo serialize_types exclude_values max_serialization_depth serialize_columns",  # noqa: E501
 )
 
 
@@ -152,6 +159,7 @@ class Serializer:
             "serialize_types": kwargs.get("serialize_types", ()),
             "exclude_values": exclude_values_set,
             "max_serialization_depth": kwargs.get("max_serialization_depth", math.inf),
+            "serialize_columns": kwargs.get("serialize_columns", {}),
         }
         self.set_options(Options(**options_kwargs))
         self.init_callbacks()
@@ -282,6 +290,12 @@ class Serializer:
 
     def serialize_with_fork(self, value, key):
         """Serialize value with a forked serializer"""
+        # Check if there's a custom serializer for this column
+        if self.opts.serialize_columns and key in self.opts.serialize_columns:
+            custom_serializer = self.opts.serialize_columns[key]
+            logger.debug("Apply custom serializer for key:%s", key)
+            return custom_serializer(value)
+
         serializer = self
         if self.is_forkable(value):
             # Check depth limit before forking
