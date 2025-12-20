@@ -551,7 +551,7 @@ wheels = [
 
 [[package]]
 name = "sqlalchemy-serializer"
-version = "1.5.4"
+version = "1.5.5"
 source = { editable = "." }
 dependencies = [
     { name = "psycopg2-binary" },
@@ -578,7 +578,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = "==2.9.11" },
     { name = "pytz", specifier = ">=2025.2" },
     { name = "setuptools", specifier = ">=80.9.0" },
-    { name = "sqlalchemy", specifier = "==2.0.45" },
+    { name = "sqlalchemy", specifier = ">=2.0.29,<3.0.0" },
 ]
 
 [package.metadata.requires-dev]
