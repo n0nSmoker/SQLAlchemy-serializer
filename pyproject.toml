@@ -15,7 +15,7 @@ classifiers = [
 ]
 keywords = ["sqlalchemy", "serialize", "to_dict", "JSON"]
 dependencies = [
-    "SQLAlchemy==2.0.45",
+    "SQLAlchemy>=2.0.29,<3.0.0",
     "psycopg2-binary==2.9.11",
     "pytz>=2025.2",
     "setuptools>=80.9.0",
