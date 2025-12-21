@@ -40,6 +40,41 @@ item = SomeModel.query.filter(...).one()
 result = item.to_dict()
 ```
 You get values of all SQLAlchemy fields in the `result` var, even nested relationships
+
+### Modern SQLAlchemy 2.0 Style
+
+**SerializerMixin** works seamlessly with both traditional SQLAlchemy style and modern SQLAlchemy 2.0 style using type annotations:
+
+**Traditional style:**
+```python
+from sqlalchemy_serializer import SerializerMixin
+import sqlalchemy as sa
+
+class SomeModel(db.Model, SerializerMixin):
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(256))
+```
+
+**Modern SQLAlchemy 2.0 style (also fully supported):**
+```python
+from __future__ import annotations
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy_serializer import SerializerMixin
+
+class ModernModel(Base, SerializerMixin):
+    __tablename__ = "modern_model"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(sa.String(256))
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, default=datetime.utcnow)
+    
+    # Relationships work too
+    parent_id: Mapped[int | None] = mapped_column(sa.ForeignKey("parent.id"), nullable=True)
+    parent: Mapped["ParentModel | None"] = relationship("ParentModel")
+```
+
+Both styles work identically with **SerializerMixin** - use whichever style you prefer!
 In order to change the default output you shuld pass tuple of fieldnames as an argument
 
 - If you want to exclude or add some extra fields (not from database)

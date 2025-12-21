@@ -1,11 +1,12 @@
-from datetime import datetime
+from datetime import date, datetime, time
 from decimal import Decimal
+from uuid import UUID as UUIDType
 from uuid import uuid4
 
 import pytz
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 from sqlalchemy_serializer import SerializerMixin
 
@@ -124,3 +125,71 @@ class CustomSerializerModel(Base, CustomSerializerMixin):
     time = sa.Column(sa.Time, default=TIME)
     bool = sa.Column(sa.Boolean, default=True)
     money = MONEY
+
+
+# Modern SQLAlchemy 2.0 style models
+class ModernFlatModel(Base, SerializerMixin):
+    __tablename__ = "modern_flat_model"
+    serialize_only = ()
+    serialize_rules = ()
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    string: Mapped[str] = mapped_column(sa.String(256), default="Modern string with")
+    date_field: Mapped[date] = mapped_column(sa.Date, default=DATETIME)
+    datetime_field: Mapped[datetime] = mapped_column(sa.DateTime, default=DATETIME)
+    time_field: Mapped[time] = mapped_column(sa.Time, default=TIME)
+    bool_field: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+    null: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    uuid: Mapped[UUIDType] = mapped_column(UUID(as_uuid=True), default=uuid4)
+    list = [1, "modern_test_string", 0.9, {"key": 123, "key2": 23423}, {"key": 234}]
+    set = {1, 2, "modern_test_string"}
+    dict = dict(key=123, key2={"key": 12})
+    money = MONEY
+
+    @property
+    def prop(self):
+        return "Modern property"
+
+    @property
+    def prop_with_bytes(self):
+        return b"Modern bytes"
+
+    def method(self):
+        return f"Modern method + {self.string}"
+
+    def _protected_method(self):
+        return f"Modern protected method + {self.string}"
+
+
+class ModernNestedModel(Base, SerializerMixin):
+    __tablename__ = "modern_nested_model"
+    serialize_only = ()
+    serialize_rules = ()
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    string: Mapped[str] = mapped_column(
+        sa.String(256), default="(MODERN_NESTED)Some string with"
+    )
+    date_field: Mapped[date] = mapped_column(sa.Date, default=DATETIME)
+    datetime_field: Mapped[datetime] = mapped_column(sa.DateTime, default=DATETIME)
+    time_field: Mapped[time] = mapped_column(sa.Time, default=TIME)
+    bool_field: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    null: Mapped[str | None] = mapped_column(sa.String, nullable=True)
+    list = [1, "(MODERN_NESTED)test_string", 0.9, {"key": 123}]
+    set = {1, 2, "(MODERN_NESTED)test_string"}
+    dict = dict(key=123)
+
+    model_id: Mapped[int | None] = mapped_column(
+        sa.ForeignKey("modern_flat_model.id"), nullable=True
+    )
+    model: Mapped["ModernFlatModel | None"] = relationship("ModernFlatModel")
+
+    @property
+    def prop(self):
+        return "(MODERN_NESTED)Some property"
+
+    def method(self):
+        return f"(MODERN_NESTED)User defined method + {self.string}"
+
+    def _protected_method(self):
+        return f"(MODERN_NESTED)User defined protected method + {self.string}"
