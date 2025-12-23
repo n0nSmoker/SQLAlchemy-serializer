@@ -1,4 +1,6 @@
-from .models import DATE, DATETIME, MONEY, TIME, FlatModel
+import sqlalchemy as sa
+
+from .models import DATE, DATETIME, MONEY, TIME, Base, FlatModel, SerializerMixin
 
 
 def test_no_defaults_no_rules(get_instance):
@@ -345,3 +347,66 @@ def test_rules_for_nested_dicts_and_lists(get_instance):
 
     assert "prop" in data
     assert data["prop"] == i.prop
+
+
+def test_method_with_default_argument():
+    """Test that methods with default arguments are serialized"""
+
+    class ModelWithDefaultMethod(Base, SerializerMixin):
+        __tablename__ = "model_with_default_method"
+        serialize_only = ()
+        serialize_rules = ()
+
+        id = sa.Column(sa.Integer, primary_key=True)
+        string = sa.Column(sa.String(256), default="test")
+
+        def is_liked(self, user=None):
+            return user is not None
+
+    i = ModelWithDefaultMethod(id=1, string="test")
+    data = i.to_dict(rules=("is_liked",))
+
+    assert "is_liked" in data
+    assert data["is_liked"] is False  # Called without args, user=None
+
+
+def test_method_with_multiple_defaults():
+    """Test method with multiple default arguments"""
+
+    class ModelWithMultiDefaults(Base, SerializerMixin):
+        __tablename__ = "model_with_multi_defaults"
+        serialize_only = ()
+        serialize_rules = ()
+
+        id = sa.Column(sa.Integer, primary_key=True)
+        string = sa.Column(sa.String(256), default="test")
+
+        def compute(self, a=1, b=2):
+            return a + b
+
+    i = ModelWithMultiDefaults(id=1, string="test")
+    data = i.to_dict(rules=("compute",))
+
+    assert "compute" in data
+    assert data["compute"] == 3  # 1 + 2
+
+
+def test_method_with_required_arg_rejected():
+    """Test that methods with required args are still rejected"""
+
+    class ModelWithRequiredArg(Base, SerializerMixin):
+        __tablename__ = "model_with_required_arg"
+        serialize_only = ()
+        serialize_rules = ()
+
+        id = sa.Column(sa.Integer, primary_key=True)
+        string = sa.Column(sa.String(256), default="test")
+
+        def method_required(self, user):  # No default
+            return user
+
+    i = ModelWithRequiredArg(id=1, string="test")
+    data = i.to_dict(rules=("method_required",))
+
+    # Should not be serialized (not callable without args)
+    assert "method_required" not in data
