@@ -240,9 +240,9 @@ def check_rule(text: str, tree: Tree) -> Tree:
     """
     rule = Rule(text)
     for k in rule.keys:
-        tree = tree.get(k)
+        tree = tree.get(k)  # type: ignore
         if tree is None:
-            raise NoNodeException(f"Can not find key:{k} in tree:{tree}")
+            raise NoNodeException(f"Cannot find key:{k} in tree:{tree}")
         if rule.is_negative:
             assert tree.to_exclude
         else:

@@ -123,7 +123,7 @@ class SerializerMixin:
             ),
             serialize_columns=serialize_columns or self.serialize_columns,
         )
-        return s(self, only=only, extend=rules)
+        return s(self, only=only, extend=rules)  # type: ignore
 
 
 Options = namedtuple(
@@ -133,7 +133,7 @@ Options = namedtuple(
 
 
 class Serializer:
-    # Types that do nod need any serialization logic
+    # Types that do not need any serialization logic
     atomic_types = (
         int,
         str,
@@ -285,7 +285,7 @@ class Serializer:
                 return self.apply_callback(value=value)
 
             except IsNotSerializable:
-                logger.warning("Can not serialize type:%s", get_type(value))
+                logger.warning("Cannot serialize type:%s", get_type(value))
 
         logger.debug("Skip value:%s", value)
         return _UNSPECIFIED
