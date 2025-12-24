@@ -86,7 +86,7 @@ class SerializerMixin:
         exclude_values=None,
         max_serialization_depth=None,
         serialize_columns=None,
-    ):
+    ) -> dict:
         """Returns SQLAlchemy model's data in JSON compatible format
 
         For details about datetime formats follow:
@@ -123,7 +123,7 @@ class SerializerMixin:
             ),
             serialize_columns=serialize_columns or self.serialize_columns,
         )
-        return s(self, only=only, extend=rules)
+        return s(self, only=only, extend=rules)  # type: ignore
 
 
 Options = namedtuple(
@@ -133,7 +133,7 @@ Options = namedtuple(
 
 
 class Serializer:
-    # Types that do nod need any serialization logic
+    # Types that do not need any serialization logic
     atomic_types = (
         int,
         str,
@@ -224,16 +224,28 @@ class Serializer:
     @staticmethod
     def is_valid_callable(func) -> bool:
         """Determines objects that should be called before serialization"""
-        if callable(func):
-            i = inspect.getfullargspec(func)
-            if (
-                i.args == ["self"]
-                and isinstance(func, MethodType)
-                and not any([i.varargs, i.varkw])
-            ):
-                return True
-            return not any([i.args, i.varargs, i.varkw])
-        return False
+        if not callable(func):
+            return False
+
+        i = inspect.getfullargspec(func)
+
+        # Check for varargs/varkw
+        # (methods with *args or **kwargs are not callable without args)
+        if any([i.varargs, i.varkw]):
+            return False
+
+        # For methods: check if all args except 'self' have defaults
+        if isinstance(func, MethodType):
+            if not i.args or i.args[0] != "self":
+                return False
+            # All args except self must have defaults
+            args_count = len(i.args) - 1
+        else:
+            # For functions: all args must have defaults
+            args_count = len(i.args) if i.args else 0
+
+        defaults_count = len(i.defaults) if i.defaults else 0
+        return args_count == defaults_count
 
     def is_forkable(self, value):
         """Determines if object should be processed in a separate serializer"""
@@ -273,7 +285,7 @@ class Serializer:
                 return self.apply_callback(value=value)
 
             except IsNotSerializable:
-                logger.warning("Can not serialize type:%s", get_type(value))
+                logger.warning("Cannot serialize type:%s", get_type(value))
 
         logger.debug("Skip value:%s", value)
         return _UNSPECIFIED

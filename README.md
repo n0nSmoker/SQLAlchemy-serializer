@@ -416,7 +416,7 @@ class Point(Base, SerializerMixin):
     position = Column(Geometry('POINT'))
 ```
 
-Unfortunately you can not access formats or tzinfo in that functions.
+Unfortunately you cannot access formats or tzinfo in that functions.
 I'll implement this logic later if any of users needs it.
 
 
@@ -517,7 +517,7 @@ But `serialize_only = ('model', '-model.id',)` will return `model` field without
 Do not forget to add **comma** at the end of one element tuples, it is trivial,
 but a lot of developers forget about it:
 ```python
-serialize_only = ('some_field',)  # <--- Thats right!
+serialize_only = ('some_field',)  # <--- That's right!
 serialize_only = ('some_field')  # <--- WRONG it is actually not a tuple
 
 ```
