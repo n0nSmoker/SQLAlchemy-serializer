@@ -28,7 +28,7 @@ _UNSPECIFIED = object()
 
 
 class SerializerMixin:
-    """Mixin for retrieving public fields of sqlAlchemy-model in json-compatible format
+    """Mixin for retrieving public fields of SQLAlchemy-model in json-compatible format
     with no pain
     It can be inherited to redefine get_tzinfo callback, datetime formats or to add
     some extra serialization logic

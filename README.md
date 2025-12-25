@@ -113,7 +113,7 @@ result = item.to_dict(only=('non_sql_field', 'method', 'somefield.id', 'somefiel
 ```
 You can use negative rules in `only` param too.
 So `item.to_dict(only=('somefield', -'somefield.id'))`
-will return `somefiled` without `id`. See [Negative rules in ONLY section](#Negative-rules-in-ONLY-section)
+will return `somefield` without `id`. See [Negative rules in ONLY section](#Negative-rules-in-ONLY-section)
 
 If you want to exclude specific values from the serialized output (e.g., `None` values):
 ```python
