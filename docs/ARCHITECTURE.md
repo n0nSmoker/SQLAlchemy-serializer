@@ -385,21 +385,14 @@ graph TD
 - Strict: Explicit control, security (don't leak fields)
 - `serialize_only` switches to strict mode
 
-### 6. Swallowing Exceptions in Iterables
-**Decision**: Catch `IsNotSerializable` in `serialize_iter()` and continue
-**Rationale**:
-- Allows partial serialization of mixed-type collections
-- Prevents one bad item from breaking entire serialization
-- **Known Issue**: May hide legitimate errors (see FIXME in code)
-
-### 7. LRU Cache for Field Introspection
+### 6. LRU Cache for Field Introspection
 **Decision**: Cache `get_serializable_keys()` results
 **Rationale**:
 - SQLAlchemy inspection is relatively expensive
 - Field names don't change at runtime
 - Significant performance improvement for repeated serialization
 
-### 8. Options Pattern
+### 7. Options Pattern
 **Decision**: Use `namedtuple` for serialization options
 **Rationale**:
 - Immutable configuration

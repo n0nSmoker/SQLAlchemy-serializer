@@ -298,16 +298,6 @@ The library caches field names using `@functools.lru_cache`:
 
 **Impact**: Significant performance improvement for repeated serialization of same model type.
 
-### Schema Checks
-
-**Current behavior**: `is_included()` is called for every field, even in strict mode.
-
-**Optimization opportunity** (TODO in code):
-- Skip `is_included()` checks when not greedy (strict mode)
-- In strict mode, only iterate over `schema.keys`
-
-**Impact**: Minor performance improvement for strict mode serialization.
-
 ### Type Checking
 
 **Current implementation**: `isinstance(value, types)` with tuple of types.
@@ -525,16 +515,6 @@ class MyModel(Base, SerializerMixin):
 
 **Note**: This is a documented limitation. May be implemented in future.
 
-### Iterable Serialization Swallows Errors
-
-**Symptom**: Some items missing from serialized list, no error
-
-**Cause**: `serialize_iter()` catches `IsNotSerializable` and continues
-
-**Behavior**: By design - allows partial serialization of mixed-type collections
-
-**Workaround**: Check logs for warnings, or serialize items individually to catch errors.
-
 ## API Decisions
 
 ### Why Mixin Instead of Base Class?
@@ -586,17 +566,6 @@ class MyModel(Base, SerializerMixin):
 - Minimal configuration for common cases
 - Easy to exclude sensitive fields with negative rules
 - Can switch to strict mode when needed
-
-### Why Swallow Exceptions in Iterables?
-
-**Decision**: Catch `IsNotSerializable` in `serialize_iter()` and continue
-
-**Rationale**:
-- Allows partial serialization of mixed-type collections
-- Prevents one bad item from breaking entire serialization
-- Common use case: list with mostly serializable items
-
-**Trade-off**: May hide legitimate errors (see FIXME in code)
 
 ### Why LRU Cache for Field Introspection?
 

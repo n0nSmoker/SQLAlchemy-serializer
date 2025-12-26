@@ -333,7 +333,7 @@ class Serializer:
     def serialize_dict(self, value: dict) -> dict:
         res = {}
         for k, v in value.items():
-            if self.schema.is_included(k):  # TODO: Skip check if is NOT greedy
+            if self.schema.is_included(k):
                 logger.debug("Serialize key:%s type:%s of dict", k, get_type(v))
 
                 result = self.serialize(value=v, key=k)
@@ -352,7 +352,7 @@ class Serializer:
             keys.update(get_serializable_keys(value))
 
         for k in keys:
-            if self.schema.is_included(key=k):  # TODO: Skip check if is NOT greedy
+            if self.schema.is_included(key=k):
                 v = getattr(value, k)
                 logger.debug(
                     "Serialize key:%s type:%s of model:%s",

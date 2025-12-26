@@ -391,7 +391,6 @@ print(serializer.schema._tree)  # Inspect rule tree
 - Cache key is model instance (works because field names don't change)
 
 **Schema optimization**:
-- TODO: Skip `is_included()` checks when not greedy (see code comments)
 - Consider caching schema lookups for repeated serialization
 
 **Type checking optimization**:

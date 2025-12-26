@@ -14,7 +14,7 @@ def test_model(get_instance):
 @pytest.mark.parametrize(
     "only, expected",
     [
-        # FIXME: last `key` ignored and all the rist is returned is it expected?
+        # FIXME: last `key` ignored and all the rest is returned is it expected?
         # (("model.list.key",), {"model": {"list": [{"key": 123}]}}),
         (("dict.key",), {"dict": {"key": 123}}),
         (("bool",), {"bool": False}),

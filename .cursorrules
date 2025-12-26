@@ -61,7 +61,6 @@ Never use bare `except:`. Log at appropriate levels (DEBUG, INFO, WARNING, ERROR
 **Project-Specific:**
 - Logger: `logging.getLogger("serializer")` with WARN level by default
 - Custom exception: `IsNotSerializable` for unserializable types
-- Iterable serialization swallows `IsNotSerializable` exceptions (see FIXME in code)
 - Use debug logging for serialization flow: `logger.debug("Serialize key:%s type:%s", ...)`
 
 ## Code Practices
@@ -133,9 +132,7 @@ Review all AI-generated code—especially complex logic and security-sensitive c
 ## Known Issues & Workarounds
 
 **Known Issues:**
-1. Iterable serialization swallows `IsNotSerializable` exceptions (see FIXME in `serialize_iter`)
-2. Schema checks can be optimized: TODO comments about skipping checks when not greedy
-3. Custom serializers cannot access format or tzinfo (documented limitation in README)
+1. Custom serializers cannot access format or tzinfo (documented limitation in README)
 
 **Common Pitfalls:**
 - One-element tuples must have trailing comma: `serialize_only = ('field',)` not `('field')`
