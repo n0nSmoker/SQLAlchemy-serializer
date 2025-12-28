@@ -124,3 +124,14 @@ def test_merge_trees():
     assert leaf.is_greedy
     assert leaf.to_include
     assert leaf.to_exclude is None
+
+
+def test_tree_repr():
+    tree = Tree(to_include=True, to_exclude=False, is_greedy=True)
+    tree["key1"] = Tree(to_include=True, to_exclude=False, is_greedy=True)
+    tree["key1"]["key2"] = Tree(to_include=True, to_exclude=False, is_greedy=True)
+    assert repr(tree) == (
+        "Tree(to_include=True, to_exclude=False, is_greedy=True)[\n"
+        "key1: Tree(to_include=True, to_exclude=False, is_greedy=True)[\n"
+        "  key2: Tree(to_include=True, to_exclude=False, is_greedy=True)[]]]"
+    )

@@ -10,7 +10,7 @@ from sqlalchemy_serializer.serializer import Serializer
 from .models import Base
 
 logger = logging.getLogger("serializer")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 DEFAULT_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"

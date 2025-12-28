@@ -1,3 +1,6 @@
+from abc import abstractmethod
+
+
 class Base:
-    def __call__(self, value) -> str:
-        raise NotImplementedError(f"Method should implement serialization logic for {value}")
+    @abstractmethod
+    def __call__(self, value) -> str: ...

@@ -35,7 +35,7 @@ class Tree(defaultdict):
                 continue  # Exclude leafs
             tree.to_strict()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         include = f"to_include={self.to_include}"
         exclude = f"to_exclude={self.to_exclude}"
         greedy = f"is_greedy={self.is_greedy}"
