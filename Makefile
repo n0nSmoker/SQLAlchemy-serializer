@@ -17,3 +17,15 @@ format:
 publish:
 	uv build --no-sources
 	UV_PUBLISH_TOKEN="$(PYPI_TOKEN)" uv publish
+
+changelog:
+	git fetch --tags
+	HEADER="# Changelog\nAll notable changes to this project will be documented in this file.\n========="; \
+	TAG=$$(git describe --tags --abbrev=0); \
+	DATE=$$(date +%Y-%m-%d); \
+	CHANGES=$$(git log $$TAG..HEAD --pretty=format:"- %s"); \
+	NEW_CONTENT="$$HEADER\n\n## [$$(uv version --short)] - $$DATE\n\n$$CHANGES\n"; \
+	perl -i -0pe "s{$$HEADER}{$$NEW_CONTENT}s" CHANGELOG.md
+
+new-version:
+	uv version --bump minor # minor, major, patch
