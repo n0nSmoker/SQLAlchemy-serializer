@@ -15,7 +15,15 @@ format:
 	uv run ruff check --fix .
 
 publish:
-	uv build --no-sources
+	@set -e; \
+	version=$$(uv version --short); \
+	if ! git tag --list | grep -Fxq "$$version"; then \
+		git tag "$$version"; \
+		git push origin "$$version"; \
+	else \
+		echo "Tag $$version already exists."; \
+	fi
+	uv build
 	UV_PUBLISH_TOKEN="$(PYPI_TOKEN)" uv publish
 
 changelog:
@@ -24,8 +32,8 @@ changelog:
 	TAG=$$(git describe --tags --abbrev=0); \
 	DATE=$$(date +%Y-%m-%d); \
 	CHANGES=$$(git log $$TAG..HEAD --pretty=format:"- %s"); \
-	NEW_CONTENT="$$HEADER\n\n## [$$(uv version --short)] - $$DATE\n\n$$CHANGES\n"; \
-	perl -i -0pe "s{$$HEADER}{$$NEW_CONTENT}s" CHANGELOG.md
+	NEW_CONTENT="## [$$(uv version --short)] - $$DATE\n\n$$CHANGES\n"; \
+	perl -i -0pe "s{$$HEADER}{$$HEADER\n\n$$NEW_CONTENT}s" CHANGELOG.md
 
 new-version:
 	uv version --bump minor # minor, major, patch
