@@ -4,13 +4,13 @@ from .models import FlatModel, NestedModel
 def test_serialize_columns_class_level(get_instance):
     """Test class-level serialize_columns attribute"""
 
-    class CustomFlatModel(FlatModel):
+    class ClassLevelCustomFlatModel(FlatModel):
         serialize_columns = {
             "id": lambda v: str(v),
             "string": lambda v: v.upper() if v else None,
         }
 
-    i = get_instance(CustomFlatModel)
+    i = get_instance(ClassLevelCustomFlatModel)
     data = i.to_dict()
 
     # Custom serializer should be applied
@@ -118,12 +118,12 @@ def test_serialize_columns_backward_compatibility(get_instance):
 def test_serialize_columns_parameter_overrides_class(get_instance):
     """Test that parameter-level serialize_columns overrides class-level"""
 
-    class CustomFlatModel(FlatModel):
+    class ParameterOverrideCustomFlatModel(FlatModel):
         serialize_columns = {
             "id": lambda v: f"CLASS_{v}",
         }
 
-    i = get_instance(CustomFlatModel)
+    i = get_instance(ParameterOverrideCustomFlatModel)
 
     # Parameter should override class-level
     data = i.to_dict(
