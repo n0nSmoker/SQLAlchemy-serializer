@@ -28,14 +28,14 @@ _UNSPECIFIED = object()
 
 
 class SerializerMixin:
-    """Mixin for retrieving public fields of SQLAlchemy-model in json-compatible format
+    """Mixin for retrieving public fields of SQLAlchemy model in json-compatible format
     with no pain
     It can be inherited to redefine get_tzinfo callback, datetime formats or to add
     some extra serialization logic
     """
 
     # Default exclusive schema.
-    # If left blank, serializer becomes greedy and takes all SQLAlchemy-model's attributes
+    # If left blank, serializer becomes greedy and takes all SQLAlchemy model's attributes
     serialize_only: tuple = ()
 
     # Additions to default schema. Can include negative rules
