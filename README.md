@@ -98,7 +98,7 @@ class SomeModel(db.Model, SerializerMixin):
 result = item.to_dict(rules=('non_sql_field', 'method'))
 ```
 **Note** that method or a function should have no arguments except ***self***,
-in order to let serializer call it without hesitations.
+in order to let serializer call it without hesitation.
 
 If you want to get exact fields:
 ```python
@@ -421,7 +421,7 @@ I'll implement this logic later if any of users needs it.
 
 
 # Timezones
-To keep `datetimes` consistent its better to store it in the database normalized to **UTC**.
+To keep `datetimes` consistent it is better to store it in the database normalized to **UTC**.
 But when you return response, sometimes (mostly in web, mobile applications can do it themselves)
 you need to convert all `datetimes` to user's timezone.
 So you need to tell serializer what timezone to use.
