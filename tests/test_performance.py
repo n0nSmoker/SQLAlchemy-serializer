@@ -199,3 +199,23 @@ def test_benchmark_custom_formats(benchmark, get_instance):
     assert isinstance(result, dict)
     assert "date" in result
     assert "money" in result
+
+
+def test_benchmark_large_collection_serialization(benchmark, get_instance):
+    """Benchmark serialization of a large collection to measure cache efficiency.
+
+    This test demonstrates the performance benefit of class-based caching:
+    - Serializing 1000 instances of the same model class should benefit from
+      a single cache entry for get_serializable_keys() instead of 1000 entries.
+    """
+    # Create a large collection of the same model type
+    models = [get_instance(FlatModel) for _ in range(1000)]
+
+    def serialize():
+        return serialize_collection(models, only=("id", "string", "bool", "datetime"))
+
+    result = benchmark(serialize)
+    assert isinstance(result, list)
+    assert len(result) == 1000
+    assert all(isinstance(item, dict) for item in result)
+    assert all("id" in item for item in result)

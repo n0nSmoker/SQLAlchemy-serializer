@@ -622,9 +622,7 @@ def test_serialize_columns_nested_model_fields(get_instance):
         serialize_columns={
             "string": lambda v: v.lower() if v else None,
             "model": (
-                lambda v: {"custom_id": v.id, "custom_string": v.string.upper()}
-                if v
-                else None
+                lambda v: {"custom_id": v.id, "custom_string": v.string.upper()} if v else None
             ),
         }
     )
