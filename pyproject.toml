@@ -1,6 +1,6 @@
 [project]
 name = "sqlalchemy-serializer"
-version = "1.6.1"
+version = "1.6.2"
 description = "Mixin for SQLAlchemy models serialization without pain"
 authors = [
     {name = "yuri.boiko", email = "yuri.boiko.dev@gmail.com"}

@@ -36,4 +36,4 @@ changelog:
 	perl -i -0pe "s{$$HEADER}{$$HEADER\n\n$$NEW_CONTENT}s" CHANGELOG.md
 
 new-version:
-	uv version --bump minor # minor, major, patch
+	uv version --bump patch # minor, major, patch
