@@ -73,6 +73,28 @@ class SerializerMixin:
         """
         return
 
+    def _get_serializer_options(self, **kwargs) -> dict:
+        """Extract serializer options from kwargs, using model instance defaults as fallback.
+
+        :param kwargs: Options to override model defaults
+        :return: Dictionary of options for Serializer initialization
+        """
+        return {
+            "date_format": kwargs.get("date_format") or self.date_format,
+            "datetime_format": kwargs.get("datetime_format") or self.datetime_format,
+            "time_format": kwargs.get("time_format") or self.time_format,
+            "decimal_format": kwargs.get("decimal_format") or self.decimal_format,
+            "tzinfo": kwargs.get("tzinfo") or self.get_tzinfo(),
+            "serialize_types": kwargs.get("serialize_types") or self.serialize_types,
+            "exclude_values": kwargs.get("exclude_values") or self.exclude_values,
+            "max_serialization_depth": (
+                kwargs.get("max_serialization_depth")
+                if kwargs.get("max_serialization_depth") is not None
+                else self.max_serialization_depth
+            ),
+            "serialize_columns": kwargs.get("serialize_columns") or self.serialize_columns,
+        }
+
     def to_dict(
         self,
         only=(),
@@ -108,21 +130,18 @@ class SerializerMixin:
             Custom serializers replace normal serialization for matching columns.
         :return: data: dict
         """
-        s = Serializer(
-            date_format=date_format or self.date_format,
-            datetime_format=datetime_format or self.datetime_format,
-            time_format=time_format or self.time_format,
-            decimal_format=decimal_format or self.decimal_format,
-            tzinfo=tzinfo or self.get_tzinfo(),
-            serialize_types=serialize_types or self.serialize_types,
-            exclude_values=exclude_values or self.exclude_values,
-            max_serialization_depth=(
-                max_serialization_depth
-                if max_serialization_depth is not None
-                else self.max_serialization_depth
-            ),
-            serialize_columns=serialize_columns or self.serialize_columns,
+        options = self._get_serializer_options(
+            date_format=date_format,
+            datetime_format=datetime_format,
+            time_format=time_format,
+            decimal_format=decimal_format,
+            tzinfo=tzinfo,
+            serialize_types=serialize_types,
+            exclude_values=exclude_values,
+            max_serialization_depth=max_serialization_depth,
+            serialize_columns=serialize_columns,
         )
+        s = Serializer(**options)
         return s(self, only=only, extend=rules)  # type: ignore
 
 
@@ -378,4 +397,43 @@ def get_type(value) -> str:
 
 
 def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
-    return [item.to_dict(*args, **kwargs) for item in iterable]
+    """Serialize a collection of model instances efficiently by reusing a single Serializer.
+
+    This optimized version creates a single Serializer instance and reuses it for all items,
+    eliminating redundant object creation overhead for large collections.
+    """
+    iterable = list(iterable)  # Convert to list to allow multiple passes
+    if not iterable:
+        return []
+
+    # Get options from first item to create a shared Serializer
+    first_item = iterable[0]
+    options = first_item._get_serializer_options(**kwargs)
+
+    # Extract only and rules from kwargs or positional args
+    # to_dict accepts only and rules as positional args, so handle both cases
+    only = kwargs.get("only", args[0] if len(args) > 0 else ())
+    rules = kwargs.get("rules", args[1] if len(args) > 1 else ())
+
+    # Create a single Serializer instance to reuse for all items
+    serializer = Serializer(**options)
+
+    # Serialize each item using the shared Serializer
+    result = []
+    for item in iterable:
+        # Create a fresh schema for this item
+        serializer.schema = Schema()
+
+        # Update schema with provided only/rules first (simulating __call__ behavior)
+        # This matches the behavior in Serializer.__call__ where schema is updated
+        # before serialize is called
+        serializer.schema.update(only=only, extend=rules)
+
+        # Serialize the item - serialize_model will update the schema again
+        # with item.serialize_only and item.serialize_rules, which matches
+        # the original behavior where __call__ updates schema, then serialize_model
+        # updates it again
+        serialized = serializer.serialize(item)
+        result.append(serialized)
+
+    return result
