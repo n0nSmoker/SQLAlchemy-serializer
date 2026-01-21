@@ -430,7 +430,7 @@ There are two ways to do it:
 ```python
 import pytz
 
-item.to_dict(timezone=pytz.timezone('Europe/Moscow'))
+item.to_dict(tzinfo=pytz.timezone('Europe/Madrid'))
 ```
 - But if you do not want to write this code in every function, you should define
   timezone logic in your custom mixin (how to use customized mixin see [Custom formats](#Custom-formats))

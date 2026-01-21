@@ -288,7 +288,7 @@ class Serializer:
 
         Args:
             value: The value to be serialized.
-            key: The key to be serialized.
+            key: The key associated with the value (for nested structures).
 
         Returns:
             The serialized value.
