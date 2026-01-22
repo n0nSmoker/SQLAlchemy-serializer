@@ -105,7 +105,7 @@ If you want to get exact fields:
 
 result = item.to_dict(only=('non_sql_field', 'method', 'somefield'))
 ```
-**Note** that if ***somefield*** is an SQLAlchemy instance, you get all it's
+**Note** that if ***somefield*** is an SQLAlchemy instance, you get all its
 serializable fields. So if you want to get only some of them, you should define it like below:
 ```python
 
@@ -523,7 +523,7 @@ serialize_only = ('some_field')  # <--- WRONG it is actually not a tuple
 ```
 
 # Tests
-To run tests and see tests coverage report just type the following command:(docker and docker-compose should be installed on you local machine)
+To run tests and see tests coverage report just type the following command: (docker and docker-compose should be installed on your local machine)
 ```bash
 make test
 ```
