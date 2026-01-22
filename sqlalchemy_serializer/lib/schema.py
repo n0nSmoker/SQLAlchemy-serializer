@@ -131,6 +131,10 @@ class Schema:
     def fork(self, key: str) -> "Schema":
         return Schema(tree=self._tree[key])
 
+    def reset(self):
+        """Reset schema to initial empty state for reuse."""
+        self._tree = Tree()
+
 
 def merge_trees(old: Tree, *trees):
     for tree in trees:

@@ -421,12 +421,8 @@ def serialize_collection(iterable: t.Iterable, *args, **kwargs) -> list:
     # Serialize each item using the shared Serializer
     result = []
     for item in iterable:
-        # Create a fresh schema for this item
-        serializer.schema = Schema()
-
-        # Update schema with provided only/rules first (simulating __call__ behavior)
-        # This matches the behavior in Serializer.__call__ where schema is updated
-        # before serialize is called
+        # Reset and update schema for this item (reuse instead of creating new)
+        serializer.schema.reset()
         serializer.schema.update(only=only, extend=rules)
 
         # Serialize the item - serialize_model will update the schema again
