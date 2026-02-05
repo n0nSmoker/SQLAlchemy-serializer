@@ -2,7 +2,7 @@
 Mixin for SQLAlchemy models serialization without pain.
 
 If you want to serialize SQLAlchemy model instances with only one line of code,
-and tools like `marshmallow` seems to be redundant and too complex for such a simple task,
+and tools like `marshmallow` seem to be redundant and too complex for such a simple task,
 this mixin definitely suits you.
 
 **Contents**
@@ -57,8 +57,6 @@ class SomeModel(db.Model, SerializerMixin):
 
 **Modern SQLAlchemy 2.0 style (also fully supported):**
 ```python
-from __future__ import annotations
-
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_serializer import SerializerMixin
 
@@ -176,7 +174,7 @@ class SomeModel(db.Model, SerializerMixin):
 result = item.to_dict()
 ```
 So the `result` in this case will be `{'somefield': [{'id': some_id}]}`
-***serialize_only***, ***serialize_rules***, ***exclude_values***, and ***serialize_columns*** work the same way as ***to_dict's*** arguments
+***serialize_only***, ***serialize_rules***, ***exclude_values***, and ***serialize_columns*** work the same way as ***to_dict*** arguments
 
 
 # Advanced usage
@@ -501,7 +499,7 @@ class RelatedModel(Base, SerializerMixin):
 ```
 If for some reason you need the field `user` to be presented in `related_models` field.
 You can change `serialize_rules` to `('-related_models.user.related_models',)`
-To break the chain of serialisation a bit further.
+To break the chain of serialization a bit further.
 [Recursive models and trees](#Recursive-models-and-trees)
 
 ## Controversial rules
