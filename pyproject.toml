@@ -90,7 +90,6 @@ lint.select = [
     "SIM",  # flake8-simplify
     "SLOT",  # flake8-slots
     "TID",  # flake8-tidy-imports
-    "TC",  # flake8-type-checking
     "ARG",  # flake8-unused-arguments
     "NPY",  # NumPy-specific rules
     "PERF",  # Perflint (PERF)
