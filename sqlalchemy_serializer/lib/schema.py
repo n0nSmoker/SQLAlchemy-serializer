@@ -32,7 +32,7 @@ class Tree(defaultdict):
         self.is_greedy = False
         for tree in self.values():
             if not tree:
-                continue  # Exclude leafs
+                continue  # Exclude leaves
             tree.to_strict()
 
     def __repr__(self) -> str:
