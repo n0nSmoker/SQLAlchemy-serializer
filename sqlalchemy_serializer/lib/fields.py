@@ -22,7 +22,7 @@ def _get_cache_key(model_instance) -> tuple[type, tuple | None, bool]:
 
 
 def get_sql_field_names(model_instance) -> set[str]:
-    """:return:  set of sql fields names
+    """Returns set of SQL field names
     :raise:  sqlalchemy.exc.NoInspectionAvailable
     """
     inspector = sql_inspect(model_instance)

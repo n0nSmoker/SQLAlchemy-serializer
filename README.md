@@ -414,10 +414,6 @@ class Point(Base, SerializerMixin):
     position = Column(Geometry('POINT'))
 ```
 
-Unfortunately you cannot access formats or tzinfo in that functions.
-I'll implement this logic later if any of users needs it.
-
-
 # Timezones
 To keep `datetimes` consistent it is better to store it in the database normalized to **UTC**.
 But when you return response, sometimes (mostly in web, mobile applications can do it themselves)
