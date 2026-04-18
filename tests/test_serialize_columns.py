@@ -6,7 +6,7 @@ def test_serialize_columns_class_level(get_instance):
 
     class ClassLevelCustomFlatModel(FlatModel):
         serialize_columns = {
-            "id": lambda v: str(v),
+            "id": str,
             "string": lambda v: v.upper() if v else None,
         }
 
@@ -220,7 +220,7 @@ def test_serialize_columns_with_multiple_fields(get_instance):
 
     data = i.to_dict(
         serialize_columns={
-            "id": lambda v: str(v),
+            "id": str,
             "string": lambda v: v.upper() if v else None,
             "bool": lambda v: "YES" if v else "NO",
         }

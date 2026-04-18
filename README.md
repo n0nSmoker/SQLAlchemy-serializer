@@ -145,7 +145,7 @@ If you want to apply custom serialization logic to specific columns:
 result = item.to_dict(serialize_columns={
     'password': lambda v: '***' if v else None,
     'email': lambda v: v.lower() if v else None,
-    'id': lambda v: str(v),
+    'id': str,
 })
 
 # Set default for all instances of a model
